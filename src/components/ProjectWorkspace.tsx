@@ -33,6 +33,39 @@ import {
 } from "lucide-react";
 
 /* --- VISUAL CARD CONFIGURATIONS FOR SECTION OVERRIDES --- */
+export const getTextureBgStyle = (
+  textureType?: "none" | "grid" | "dots",
+  gridSize?: "small" | "medium" | "large",
+  dotsSpacing?: "dense" | "normal" | "sparse"
+): React.CSSProperties => {
+  if (textureType === "grid") {
+    let sizePx = "24px 24px";
+    if (gridSize === "small") sizePx = "12px 12px";
+    if (gridSize === "large") sizePx = "40px 40px";
+    return {
+      backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.12) 1px, transparent 1px)`,
+      backgroundSize: sizePx,
+    };
+  }
+  if (textureType === "dots") {
+    let sizePx = "20px 20px";
+    let dotRadius = "1.2px";
+    if (dotsSpacing === "dense") {
+      sizePx = "10px 10px";
+      dotRadius = "1px";
+    }
+    if (dotsSpacing === "sparse") {
+      sizePx = "36px 36px";
+      dotRadius = "1.5px";
+    }
+    return {
+      backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.22) ${dotRadius}, transparent ${dotRadius})`,
+      backgroundSize: sizePx,
+    };
+  }
+  return {};
+};
+
 const LAYOUT_VARIANTS = [
   {
     id: "Centered Focus",
@@ -496,8 +529,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           <div className="flex-1 p-3 space-y-2 overflow-y-auto">
             {project.sections.map((sec, idx) => {
               const isActive = sec.id === activeSectionId;
-              const statusTag = idx === 0 ? "Ready" : idx === 1 ? "Draft" : "Pending";
-              const statusColor = idx === 0 ? "text-green-500" : idx === 1 ? "text-[#666]" : "text-blue-500";
 
               return (
                 <div
@@ -512,9 +543,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   <div className="flex items-center justify-between mb-1">
                     <span className={`text-xs font-bold ${isActive ? "text-white" : "text-[#AAA]"}`}>
                       0{idx + 1}. {sec.title}
-                    </span>
-                    <span className={`text-[10px] uppercase font-bold ${statusColor}`}>
-                      {statusTag}
                     </span>
                   </div>
 
@@ -935,7 +963,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                           onChange={(e) =>
                             handleUpdateSection({
                               ...activeSection,
-                              keyElements: e.target.value.split("\n").filter((line) => line.trim() !== ""),
+                              keyElements: e.target.value.split("\n"),
                             })
                           }
                           className="w-full bg-[#121212] border border-[#333] rounded p-2 text-xs text-white focus:outline-none focus:border-blue-500 font-mono resize-y"
@@ -1031,7 +1059,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                               ...activeSection,
                               copyDraft: {
                                 ...activeSection.copyDraft,
-                                bulletPoints: e.target.value.split("\n").filter((l) => l.trim() !== ""),
+                                bulletPoints: e.target.value.split("\n"),
                               },
                             })
                           }
@@ -1160,7 +1188,220 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                         </div>
                       </div>
 
-                      {/* 3. PADDING CARDS */}
+                      {/* 2.5. SECTION BACKGROUND TEXTURE OVERLAY CONTROLS */}
+                      <div className="space-y-3.5 p-3.5 bg-[#141417] border border-[#2A2A35] rounded-xl">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-cyan-400" />
+                            <label className="text-xs font-bold text-white uppercase tracking-wider">
+                              Textura Decorativa de Sección (Overlay)
+                            </label>
+                          </div>
+                          <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/50 px-2 py-0.5 rounded-full font-semibold">
+                            Capa Decorativa Acompañante
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-[#888] leading-relaxed">
+                          Selecciona una textura decorativa sutil (Cuadrícula o Point Grid) que se superpone de manera armoniosa sobre el fondo base de la sección sin reemplazar su color.
+                        </p>
+
+                        {/* Dropdown Selectors for Texture Type & Specific Parameters */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-[#AAA] font-bold mb-1 uppercase">
+                              Tipo de Textura
+                            </label>
+                            <select
+                              value={activeSection.sectionStyleOverrides?.bgTextureType || "none"}
+                              onChange={(e) =>
+                                handleUpdateSection({
+                                  ...activeSection,
+                                  sectionStyleOverrides: {
+                                    ...activeSection.sectionStyleOverrides,
+                                    bgTextureType: e.target.value as any,
+                                    gridSize: activeSection.sectionStyleOverrides?.gridSize || "medium",
+                                    dotsSpacing: activeSection.sectionStyleOverrides?.dotsSpacing || "normal",
+                                  },
+                                })
+                              }
+                              className="w-full bg-[#1A1A22] border border-[#333] rounded-lg p-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-medium"
+                            >
+                              <option value="none">Sin Textura (Fondo Plano / Limpio)</option>
+                              <option value="grid">Cuadrícula (Grid Pattern Overlay)</option>
+                              <option value="dots">Point Grid (Matriz de Puntos Decorativa)</option>
+                            </select>
+                          </div>
+
+                          {/* Secondary Dropdown for Sub-parameters */}
+                          {activeSection.sectionStyleOverrides?.bgTextureType === "grid" && (
+                            <div>
+                              <label className="block text-[11px] text-cyan-400 font-bold mb-1 uppercase">
+                                Tamaño de Cuadrícula
+                              </label>
+                              <select
+                                value={activeSection.sectionStyleOverrides?.gridSize || "medium"}
+                                onChange={(e) =>
+                                  handleUpdateSection({
+                                    ...activeSection,
+                                    sectionStyleOverrides: {
+                                      ...activeSection.sectionStyleOverrides,
+                                      gridSize: e.target.value as any,
+                                    },
+                                  })
+                                }
+                                className="w-full bg-[#1A1A22] border border-cyan-500/50 rounded-lg p-2 text-xs text-cyan-200 focus:outline-none focus:border-cyan-400 font-medium"
+                              >
+                                <option value="large">Cuadrícula con Cuadros Grandes (~40px)</option>
+                                <option value="medium">Cuadrícula con Cuadros Medianos (~24px)</option>
+                                <option value="small">Cuadrícula con Cuadros Pequeños (~12px)</option>
+                              </select>
+                            </div>
+                          )}
+
+                          {activeSection.sectionStyleOverrides?.bgTextureType === "dots" && (
+                            <div>
+                              <label className="block text-[11px] text-cyan-400 font-bold mb-1 uppercase">
+                                Tamaño & Espaciado de Puntos
+                              </label>
+                              <select
+                                value={activeSection.sectionStyleOverrides?.dotsSpacing || "normal"}
+                                onChange={(e) =>
+                                  handleUpdateSection({
+                                    ...activeSection,
+                                    sectionStyleOverrides: {
+                                      ...activeSection.sectionStyleOverrides,
+                                      dotsSpacing: e.target.value as any,
+                                    },
+                                  })
+                                }
+                                className="w-full bg-[#1A1A22] border border-cyan-500/50 rounded-lg p-2 text-xs text-cyan-200 focus:outline-none focus:border-cyan-400 font-medium"
+                              >
+                                <option value="dense">Point Grid - Puntos Muy Cercanos (~10px)</option>
+                                <option value="normal">Point Grid - Puntos Normales (~20px)</option>
+                                <option value="sparse">Point Grid - Puntos Alejados (~36px)</option>
+                              </select>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Interactive Visual Cards for Texture Selection */}
+                        <div className="grid grid-cols-3 gap-2 pt-1">
+                          {[
+                            {
+                              id: "none",
+                              title: "Sin Textura",
+                              subtitle: "Fondo Limpio",
+                              previewStyle: {},
+                            },
+                            {
+                              id: "grid",
+                              title: "Cuadrícula",
+                              subtitle: "Grid Overlay",
+                              previewStyle: getTextureBgStyle(
+                                "grid",
+                                activeSection.sectionStyleOverrides?.gridSize || "medium"
+                              ),
+                            },
+                            {
+                              id: "dots",
+                              title: "Point Grid",
+                              subtitle: "Matriz de Puntos",
+                              previewStyle: getTextureBgStyle(
+                                "dots",
+                                undefined,
+                                activeSection.sectionStyleOverrides?.dotsSpacing || "normal"
+                              ),
+                            },
+                          ].map((item) => {
+                            const isSelected =
+                              (activeSection.sectionStyleOverrides?.bgTextureType || "none") === item.id;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() =>
+                                  handleUpdateSection({
+                                    ...activeSection,
+                                    sectionStyleOverrides: {
+                                      ...activeSection.sectionStyleOverrides,
+                                      bgTextureType: item.id as any,
+                                      gridSize: activeSection.sectionStyleOverrides?.gridSize || "medium",
+                                      dotsSpacing: activeSection.sectionStyleOverrides?.dotsSpacing || "normal",
+                                    },
+                                  })
+                                }
+                                className={`group relative p-2.5 rounded-xl border text-left transition-all duration-200 overflow-hidden flex flex-col justify-between h-20 ${
+                                  isSelected
+                                    ? "bg-cyan-950/40 border-cyan-500 text-white shadow-md shadow-cyan-500/10 ring-1 ring-cyan-500"
+                                    : "bg-[#181820] border-[#2C2C38] hover:bg-[#20202C] text-[#AAA]"
+                                }`}
+                              >
+                                <div
+                                  className="absolute inset-0 opacity-40 pointer-events-none transition-opacity"
+                                  style={item.previewStyle}
+                                />
+                                <div className="relative z-10 flex items-center justify-between">
+                                  <span className="text-xs font-bold text-white">{item.title}</span>
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
+                                </div>
+                                <div className="relative z-10 text-[10px] text-[#888] group-hover:text-[#CCC]">
+                                  {item.subtitle}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Live Overlay Preview Canvas */}
+                        {(activeSection.sectionStyleOverrides?.bgTextureType === "grid" ||
+                          activeSection.sectionStyleOverrides?.bgTextureType === "dots") && (
+                          <div className="mt-2 p-3.5 rounded-xl border border-cyan-500/30 bg-[#0E0E14] relative overflow-hidden flex flex-col gap-2 shadow-inner">
+                            <div
+                              className="absolute inset-0 opacity-60 pointer-events-none"
+                              style={getTextureBgStyle(
+                                activeSection.sectionStyleOverrides?.bgTextureType,
+                                activeSection.sectionStyleOverrides?.gridSize,
+                                activeSection.sectionStyleOverrides?.dotsSpacing
+                              )}
+                            />
+                            <div className="relative z-10 flex items-center justify-between text-[11px]">
+                              <span className="font-bold text-cyan-300 flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                                Previsualización de Textura Superpuesta
+                              </span>
+                              <span className="text-[10px] text-slate-300 font-mono bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">
+                                {activeSection.sectionStyleOverrides?.bgTextureType === "grid"
+                                  ? `Grid: ${
+                                      activeSection.sectionStyleOverrides?.gridSize === "small"
+                                        ? "Pequeña (~12px)"
+                                        : activeSection.sectionStyleOverrides?.gridSize === "large"
+                                        ? "Grande (~40px)"
+                                        : "Mediana (~24px)"
+                                    }`
+                                  : `Point Grid: ${
+                                      activeSection.sectionStyleOverrides?.dotsSpacing === "dense"
+                                        ? "Muy Cercanos (~10px)"
+                                        : activeSection.sectionStyleOverrides?.dotsSpacing === "sparse"
+                                        ? "Alejados (~36px)"
+                                        : "Normales (~20px)"
+                                    }`}
+                              </span>
+                            </div>
+                            <div className="relative z-10 p-3 rounded-lg bg-[#181822]/90 border border-[#333344] flex items-center justify-between gap-2 shadow-sm backdrop-blur-xs">
+                              <div>
+                                <p className="text-xs font-bold text-white">Vista Previa de Sección con Textura</p>
+                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                  La textura se superpone suavemente en el fondo sin alterar el color seleccionado.
+                                </p>
+                              </div>
+                              <span className="px-3 py-1 text-[10px] font-bold bg-cyan-500 text-slate-950 rounded-md shrink-0 shadow-sm">
+                                CTA Demo
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       <div className="space-y-2">
                         <label className="block text-[11px] text-[#AAA] font-bold uppercase tracking-wide">
                           Espaciado Vertical (Padding)

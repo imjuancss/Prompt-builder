@@ -67,6 +67,27 @@ export function buildSectionPrompt(project: Project, section: Section, targetLLM
   const effectiveLLM = targetLLMOverride || targetLLM;
   const llmHints = getLLMOptimizationHints(effectiveLLM);
 
+  // Texture Description Helper
+  const textureType = overrides.bgTextureType || "none";
+  let textureDescription = "Sin textura adicional (Limpio)";
+  if (textureType === "grid") {
+    const sizeMap = {
+      small: "Cuadrícula Pequeña (cuadros pequeños ~16px)",
+      medium: "Cuadrícula Mediana (cuadros medianos ~32px)",
+      large: "Cuadrícula Grande (cuadros grandes ~48px)",
+    };
+    const sizeText = sizeMap[overrides.gridSize || "medium"];
+    textureDescription = `Textura de Cuadrícula / Grid Overlay (\`${sizeText}\`). Implementar como un patrón sutil decorativo CSS/SVG superpuesto armoniosamente que acompaña el fondo sin reemplazarlo.`;
+  } else if (textureType === "dots") {
+    const spacingMap = {
+      dense: "Puntos Muy Cercanos (distancia reducida ~12px)",
+      normal: "Puntos Normales (distancia estándar ~24px)",
+      sparse: "Puntos Alejados (distancia amplia ~40px)",
+    };
+    const spacingText = spacingMap[overrides.dotsSpacing || "normal"];
+    textureDescription = `Textura de Matriz de Puntos / Point Grid Overlay (\`${spacingText}\`). Implementar como una trama sutil de puntos decorativos CSS/SVG superpuestos con elegancia que acompaña el fondo base.`;
+  }
+
   return `<!-- PROMPT: ${validSection.title.toUpperCase()} | TIPO: ${validSection.type.toUpperCase()} -->
 
 ### SYSTEM DIRECTIVE
@@ -115,16 +136,23 @@ ${sectionConfig.keyFocus.map(f => `- ${f}`).join("\n")}
 
 **Especificaciones de Sección:**
 - **Estilo de Fondo de Sección:** \`${overrides.bgStyle || "Solid Surface"}\`
+- **Textura Decorativa de Fondo (Overlay):** ${textureDescription}
 - **Variante de Layout:** \`${overrides.layoutVariant || layoutPattern}\`
 - **Espaciado Vertical:** \`${overrides.paddingVertical || "Standard (py-20)"}\` | Container: \`max-w-7xl mx-auto\`
 - **Estilo de Animaciones:** \`${overrides.animationStyle || "Framer Motion Fluid"}\`
 ${overrides.libraryEnhancements && overrides.libraryEnhancements.length > 0 ? `- **Librerías & Componentes Especiales Solicitados:** ${overrides.libraryEnhancements.join(", ")}\n` : ""}- **Tipografía:** Headings: \`${typography.headingFont}\` | Body: \`${typography.bodyFont}\`
+- **Redondeado General (Cards/Boxes):** \`${project.styleConfig.componentStyles?.borderRadius || "lg"}\`
+- **Elevación y Sombras:** \`${project.styleConfig.componentStyles?.elevation || "medium"}\`
+- **Redondeado de Botones:** \`${project.styleConfig.componentStyles?.buttonRadius || "lg"}\`
+- **Espaciado / Padding de Botones:** \`${project.styleConfig.componentStyles?.buttonPadding || "standard"}\`
+- **Estilo Visual de Botón:** \`${project.styleConfig.componentStyles?.buttonVariant || "solid"}\`
+- **Coherencia Física entre Botones Primario & Secundario:** El botón secundario DEBE compartir exactamente las mismas características físicas (mismo redondeado \`${project.styleConfig.componentStyles?.buttonRadius || "lg"}\`, mismo padding/tamaño \`${project.styleConfig.componentStyles?.buttonPadding || "standard"}\` y misma familia de variante \`${project.styleConfig.componentStyles?.buttonVariant || "solid"}\`), diferenciándose únicamente por el tratamiento de color secundario/borde.
 - **Vibe / Atmósfera Global:** ${globalVibe}
 
 ---
 
 ### 3. ELEMENTOS REQUERIDOS
-${(validSection.keyElements && validSection.keyElements.length > 0 ? validSection.keyElements : sectionConfig.recommendedElements).map(el => `- [ ] ${el}`).join("\n")}
+${(validSection.keyElements && validSection.keyElements.filter(el => el.trim() !== "").length > 0 ? validSection.keyElements.filter(el => el.trim() !== "") : sectionConfig.recommendedElements).map(el => `- [ ] ${el}`).join("\n")}
 
 ${sectionConfig.codeExamples ? `**Ejemplo Código:**\n\`\`\`tsx\n${sectionConfig.codeExamples}\n\`\`\`` : ""}
 
@@ -134,7 +162,7 @@ ${sectionConfig.codeExamples ? `**Ejemplo Código:**\n\`\`\`tsx\n${sectionConfig
 - **Headline Principal:** "${copy.headline}"
 - **Subheadline / Cuerpo:** "${copy.subheadline || "..."}"
 - **CTA Principal:** "${copy.ctaText}"
-${copy.secondaryCtaText ? `- **CTA Secundario:** "${copy.secondaryCtaText}"\n` : ""}${copy.bulletPoints?.length ? "- **Viñetas / Puntos Clave:**\n" + copy.bulletPoints.map(bp => `  * ${bp}`).join("\n") + "\n" : ""}${copy.extraNotes ? `- **Instrucciones Especiales de Copy / Notas:** ${copy.extraNotes}\n` : ""}
+${copy.secondaryCtaText ? `- **CTA Secundario:** "${copy.secondaryCtaText}"\n` : ""}${copy.bulletPoints?.filter(bp => bp.trim() !== "").length ? "- **Viñetas / Puntos Clave:**\n" + copy.bulletPoints.filter(bp => bp.trim() !== "").map(bp => `  * ${bp}`).join("\n") + "\n" : ""}${copy.extraNotes ? `- **Instrucciones Especiales de Copy / Notas:** ${copy.extraNotes}\n` : ""}
 
 ---
 

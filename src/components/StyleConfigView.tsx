@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { ColorPalette, TypographyPair, Project } from "../types";
+import { ColorPalette, TypographyPair, ComponentStyleConfig, Project } from "../types";
 import { PRESET_PALETTES, PRESET_TYPOGRAPHY, GOOGLE_FONTS_COLLECTION } from "../data/presets";
-import { Sparkles, Palette, Type, RefreshCw, BookmarkPlus, Check, Eye, ArrowLeft, Save, Type as TypeIcon } from "lucide-react";
+import { Sparkles, Palette, Type, RefreshCw, BookmarkPlus, Check, Eye, ArrowLeft, Save, Square, Layers, MousePointerClick, Radius, Shapes, Box, Sliders } from "lucide-react";
 import { loadGoogleFont, loadGoogleFonts } from "../utils/fontLoader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,22 @@ export const StyleConfigView: React.FC<StyleConfigViewProps> = ({
   onSaveAsTemplate,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<"palette" | "typography" | "templates">("palette");
+  const [activeTab, setActiveTab] = useState<"palette" | "typography" | "components">("palette");
 
   // Local Editable Palette
   const [palette, setPalette] = useState<ColorPalette>({ ...project.styleConfig.palette });
 
   // Local Editable Typography
   const [typography, setTypography] = useState<TypographyPair>({ ...project.styleConfig.typography });
+
+  // Local Editable Component & Geometrics Style
+  const [componentStyles, setComponentStyles] = useState<ComponentStyleConfig>({
+    borderRadius: project.styleConfig.componentStyles?.borderRadius || "lg",
+    elevation: project.styleConfig.componentStyles?.elevation || "medium",
+    buttonRadius: project.styleConfig.componentStyles?.buttonRadius || "lg",
+    buttonPadding: project.styleConfig.componentStyles?.buttonPadding || "standard",
+    buttonVariant: project.styleConfig.componentStyles?.buttonVariant || "solid",
+  });
 
   // Custom Editable Preview Text
   const [customPreviewHeadline, setCustomPreviewHeadline] = useState("Titular de Ejemplo con Google Fonts");
@@ -103,6 +112,7 @@ export const StyleConfigView: React.FC<StyleConfigViewProps> = ({
       palette,
       typography,
       globalVibe,
+      componentStyles,
     });
     onClose();
   };
@@ -122,6 +132,142 @@ export const StyleConfigView: React.FC<StyleConfigViewProps> = ({
     setTimeout(() => setSavedSuccess(false), 3000);
     setShowSaveTemplateForm(false);
     setTemplateName("");
+  };
+
+  // Helper mappings for real-time visual rendering
+  const getBorderRadiusClass = (radius?: string) => {
+    switch (radius) {
+      case "none": return "rounded-none";
+      case "sm": return "rounded-md";
+      case "md": return "rounded-xl";
+      case "lg": return "rounded-2xl";
+      case "xl": return "rounded-3xl";
+      case "full": return "rounded-[2rem]";
+      default: return "rounded-2xl";
+    }
+  };
+
+  const getElevationClass = (elevation?: string) => {
+    switch (elevation) {
+      case "none": return "shadow-none border border-[#2A2A2A]";
+      case "subtle": return "shadow-md border border-[#2A2A2A]";
+      case "medium": return "shadow-xl border border-[#3A3A3A]";
+      case "high": return "shadow-2xl border border-[#4A4A4A]";
+      case "glow": return "shadow-[0_0_25px_rgba(99,102,241,0.45)] border border-indigo-500/50";
+      default: return "shadow-xl border border-[#3A3A3A]";
+    }
+  };
+
+  const getButtonRadiusClass = (radius?: string) => {
+    switch (radius) {
+      case "none": return "rounded-none";
+      case "sm": return "rounded-md";
+      case "md": return "rounded-xl";
+      case "lg": return "rounded-2xl";
+      case "full": return "rounded-full";
+      default: return "rounded-xl";
+    }
+  };
+
+  const getButtonPaddingClass = (padding?: string) => {
+    switch (padding) {
+      case "compact": return "px-3.5 py-1.5 text-[11px] font-bold";
+      case "standard": return "px-5 py-2.5 text-xs font-bold";
+      case "spacious": return "px-7 py-3.5 text-sm font-extrabold";
+      default: return "px-5 py-2.5 text-xs font-bold";
+    }
+  };
+
+  const getButtonVariantStyle = (
+    variant?: string,
+    primaryColor = "#4F46E5",
+    secondaryColor = "#06B6D4",
+    textColor = "#FFFFFF",
+    isSecondary = false
+  ) => {
+    if (!isSecondary) {
+      switch (variant) {
+        case "gradient":
+          return {
+            background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+            color: "#FFFFFF",
+            border: "none",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.25)",
+          };
+        case "glass":
+          return {
+            backgroundColor: "rgba(255, 255, 255, 0.15)",
+            backdropFilter: "blur(12px)",
+            color: "#FFFFFF",
+            border: "1px solid rgba(255, 255, 255, 0.35)",
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
+          };
+        case "outline-glow":
+          return {
+            backgroundColor: "transparent",
+            color: textColor,
+            border: `2px solid ${primaryColor}`,
+            boxShadow: `0 0 15px ${primaryColor}66`,
+          };
+        case "3d":
+          return {
+            backgroundColor: primaryColor,
+            color: "#FFFFFF",
+            borderBottom: "4px solid rgba(0,0,0,0.4)",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+          };
+        case "solid":
+        default:
+          return {
+            backgroundColor: primaryColor,
+            color: "#FFFFFF",
+            border: "none",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.18)",
+          };
+      }
+    } else {
+      // SECONDARY BUTTON: Shares identical physical dimensions, radius, and padding, adapted color treatment
+      switch (variant) {
+        case "gradient":
+          return {
+            background: `linear-gradient(135deg, ${secondaryColor}25, ${primaryColor}15)`,
+            color: textColor,
+            border: `1.5px solid ${secondaryColor}77`,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
+          };
+        case "glass":
+          return {
+            backgroundColor: "rgba(255, 255, 255, 0.05)",
+            backdropFilter: "blur(12px)",
+            color: textColor,
+            border: `1px solid ${textColor}25`,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+          };
+        case "outline-glow":
+          return {
+            backgroundColor: "transparent",
+            color: textColor,
+            border: `2px solid ${secondaryColor}`,
+            boxShadow: `0 0 12px ${secondaryColor}44`,
+          };
+        case "3d":
+          return {
+            backgroundColor: "transparent",
+            color: textColor,
+            border: `2px solid ${textColor}40`,
+            borderBottom: `4px solid ${textColor}60`,
+            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+          };
+        case "solid":
+        default:
+          return {
+            backgroundColor: `${secondaryColor}20`,
+            color: textColor,
+            border: `1.5px solid ${secondaryColor}50`,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          };
+      }
+    }
   };
 
   return (
@@ -247,21 +393,25 @@ export const StyleConfigView: React.FC<StyleConfigViewProps> = ({
 
         {/* Two-Column Frame: Left Config Controls | Right Always-Visible Live Preview */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT COLUMN: Configuration Controls (Tabs: Colors, Typography) */}
+          {/* LEFT COLUMN: Configuration Controls (Tabs: Colors, Typography, Components & Geometry) */}
           <div className="lg:col-span-7 space-y-6">
             <Tabs
               value={activeTab}
-              onValueChange={(val) => setActiveTab(val as "palette" | "typography")}
+              onValueChange={(val) => setActiveTab(val as "palette" | "typography" | "components")}
               className="w-full"
             >
-              <TabsList className="bg-[#181818] border border-[#2A2A2A] p-1 rounded-xl mb-6 w-full grid grid-cols-2">
-                <TabsTrigger value="palette" className="flex items-center justify-center gap-2 text-xs font-bold">
-                  <Palette className="w-4 h-4" />
-                  <span>Paleta de Colores</span>
+              <TabsList className="bg-[#181818] border border-[#2A2A2A] p-1 rounded-xl mb-6 w-full grid grid-cols-3">
+                <TabsTrigger value="palette" className="flex items-center justify-center gap-1.5 text-xs font-bold">
+                  <Palette className="w-3.5 h-3.5" />
+                  <span>Colores</span>
                 </TabsTrigger>
-                <TabsTrigger value="typography" className="flex items-center justify-center gap-2 text-xs font-bold">
-                  <Type className="w-4 h-4" />
-                  <span>Tipografía (Google Fonts)</span>
+                <TabsTrigger value="typography" className="flex items-center justify-center gap-1.5 text-xs font-bold">
+                  <Type className="w-3.5 h-3.5" />
+                  <span>Tipografía</span>
+                </TabsTrigger>
+                <TabsTrigger value="components" className="flex items-center justify-center gap-1.5 text-xs font-bold">
+                  <Shapes className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Botones & Forma</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -575,6 +725,265 @@ export const StyleConfigView: React.FC<StyleConfigViewProps> = ({
                   </div>
                 </div>
               </TabsContent>
+
+              {/* TAB 3: COMPONENTS, GEOMETRY & BUTTON STYLING */}
+              <TabsContent value="components" className="mt-0 space-y-8">
+                {/* SECTION 1: Redondeado General de Tarjetas (Border Radius) */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <Square className="w-4 h-4 text-indigo-400" />
+                      <span>Redondeado General de Contenedores y Tarjetas</span>
+                    </label>
+                    <span className="text-[11px] font-mono font-bold text-indigo-300 uppercase bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                      {componentStyles.borderRadius || "lg"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {[
+                      { id: "none", label: "Plano / Rectangular", px: "0px", class: "rounded-none" },
+                      { id: "sm", label: "Sutil", px: "6px", class: "rounded-md" },
+                      { id: "md", label: "Estándar", px: "12px", class: "rounded-xl" },
+                      { id: "lg", label: "Suave Moderno", px: "16px", class: "rounded-2xl" },
+                      { id: "xl", label: "Amplio", px: "24px", class: "rounded-3xl" },
+                      { id: "full", label: "Cápsula Orgánica", px: "32px", class: "rounded-[2rem]" },
+                    ].map((item) => {
+                      const isSelected = componentStyles.borderRadius === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setComponentStyles((prev) => ({ ...prev, borderRadius: item.id as any }))}
+                          className={`p-3 text-left border transition flex flex-col justify-between gap-2.5 group ${
+                            isSelected
+                              ? "bg-indigo-950/60 border-indigo-500 text-white shadow-lg ring-1 ring-indigo-500"
+                              : "bg-[#181818] hover:bg-[#222] border-[#2A2A2A] text-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-xs font-bold group-hover:text-indigo-300">{item.label}</span>
+                            <span className="text-[10px] font-mono text-slate-500">{item.px}</span>
+                          </div>
+
+                          {/* Visual Shape Miniature */}
+                          <div className="w-full h-8 bg-[#121212] border border-indigo-500/30 flex items-center justify-center">
+                            <div className={`w-full h-full bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 border border-indigo-400/40 ${item.class}`} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* SECTION 2: Elevación & Sombras (Shadows) */}
+                <div className="space-y-3 pt-2 border-t border-[#2A2A2A]">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-cyan-400" />
+                      <span>Elevación & Sombras de Elementos</span>
+                    </label>
+                    <span className="text-[11px] font-mono font-bold text-cyan-300 uppercase bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                      {componentStyles.elevation || "medium"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {[
+                      { id: "none", label: "Plano / Sin Sombra", style: "Sin elevación Z-axis", shadowClass: "shadow-none border border-[#333]" },
+                      { id: "subtle", label: "Sombra Sutil", style: "Flotación discreta", shadowClass: "shadow-md border border-[#333]" },
+                      { id: "medium", label: "Sombra Media", style: "Profundidad equilibrada", shadowClass: "shadow-xl border border-indigo-500/20" },
+                      { id: "high", label: "Flotante Elevada", style: "Gran relieve visual", shadowClass: "shadow-2xl border border-indigo-500/40" },
+                      { id: "glow", label: "Resplandor Neon Glow", style: "Aura ambiental de acento", shadowClass: "shadow-[0_0_20px_rgba(99,102,241,0.5)] border border-indigo-500" },
+                    ].map((item) => {
+                      const isSelected = componentStyles.elevation === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setComponentStyles((prev) => ({ ...prev, elevation: item.id as any }))}
+                          className={`p-3 rounded-2xl text-left border transition space-y-2 group ${
+                            isSelected
+                              ? "bg-indigo-950/60 border-indigo-500 text-white ring-1 ring-indigo-500"
+                              : "bg-[#181818] hover:bg-[#222] border-[#2A2A2A] text-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold group-hover:text-indigo-300">{item.label}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-indigo-400" />}
+                          </div>
+
+                          <div className={`p-2 bg-[#121212] rounded-xl text-[10px] text-slate-400 ${item.shadowClass}`}>
+                            {item.style}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* SECTION 3: Redondeado del Botón (Button Radius) */}
+                <div className="space-y-3 pt-2 border-t border-[#2A2A2A]">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <Radius className="w-4 h-4 text-purple-400" />
+                      <span>Redondeado del Botón (Button Radius)</span>
+                    </label>
+                    <span className="text-[11px] font-mono font-bold text-purple-300 uppercase bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                      {componentStyles.buttonRadius || "lg"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {[
+                      { id: "none", label: "Rectangular", class: "rounded-none" },
+                      { id: "sm", label: "Sutil 6px", class: "rounded-md" },
+                      { id: "md", label: "Redondeado", class: "rounded-xl" },
+                      { id: "full", label: "Cápsula / Pill", class: "rounded-full" },
+                    ].map((item) => {
+                      const isSelected = componentStyles.buttonRadius === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setComponentStyles((prev) => ({ ...prev, buttonRadius: item.id as any }))}
+                          className={`p-3 text-center border transition flex flex-col items-center justify-center gap-2 group ${
+                            isSelected
+                              ? "bg-purple-950/60 border-purple-500 text-white ring-1 ring-purple-500"
+                              : "bg-[#181818] hover:bg-[#222] border-[#2A2A2A] text-slate-300"
+                          }`}
+                        >
+                          <span className="text-xs font-bold group-hover:text-purple-300">{item.label}</span>
+                          <div
+                            className={`px-4 py-1.5 text-[10px] font-bold text-white transition shadow-sm ${item.class}`}
+                            style={{ backgroundColor: palette.primary }}
+                          >
+                            Botón
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* SECTION 4: Espaciado Interno de Botones (Button Padding) */}
+                <div className="space-y-3 pt-2 border-t border-[#2A2A2A]">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <MousePointerClick className="w-4 h-4 text-amber-400" />
+                      <span>Espaciado Interno / Densidad del Botón (Button Padding)</span>
+                    </label>
+                    <span className="text-[11px] font-mono font-bold text-amber-300 uppercase bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      {componentStyles.buttonPadding || "standard"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { id: "compact", label: "Compacto", paddingClass: "px-3.5 py-1.5 text-[11px]", desc: "Ideal para cabeceras y UI densa" },
+                      { id: "standard", label: "Estándar Balanceado", paddingClass: "px-5 py-2.5 text-xs", desc: "Equilibrio perfecto de conversión" },
+                      { id: "spacious", label: "Generoso / Hero CTA", paddingClass: "px-7 py-3.5 text-sm font-extrabold", desc: "Atracción inmediata en secciones Hero" },
+                    ].map((item) => {
+                      const isSelected = componentStyles.buttonPadding === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setComponentStyles((prev) => ({ ...prev, buttonPadding: item.id as any }))}
+                          className={`p-3.5 rounded-2xl text-left border transition space-y-2 flex flex-col justify-between group ${
+                            isSelected
+                              ? "bg-amber-950/40 border-amber-500 text-white ring-1 ring-amber-500"
+                              : "bg-[#181818] hover:bg-[#222] border-[#2A2A2A] text-slate-300"
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold group-hover:text-amber-300">{item.label}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
+                          </div>
+
+                          <div className="pt-2 flex items-center justify-center gap-2">
+                            <span
+                              className={`inline-block text-white font-bold transition ${getButtonRadiusClass(componentStyles.buttonRadius)} ${item.paddingClass}`}
+                              style={{ backgroundColor: palette.primary }}
+                            >
+                              Primario
+                            </span>
+                            <span
+                              className={`inline-block font-bold transition ${getButtonRadiusClass(componentStyles.buttonRadius)} ${item.paddingClass}`}
+                              style={{ backgroundColor: `${palette.secondary}25`, color: palette.text, border: `1px solid ${palette.secondary}50` }}
+                            >
+                              Secundario
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* SECTION 5: Tipo & Efecto Visual del Botón (Button Variant) */}
+                <div className="space-y-3 pt-2 border-t border-[#2A2A2A]">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <span>Efecto & Variante Visual del Botón (Aplica a Primario y Secundario)</span>
+                    </label>
+                    <span className="text-[11px] font-mono font-bold text-emerald-300 uppercase bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      {componentStyles.buttonVariant || "solid"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { id: "solid", label: "Sólido Clásico", desc: "Primario relleno pleno y secundario con tinte y borde suave" },
+                      { id: "gradient", label: "Gradiente Dinámico", desc: "Primario degradado e intenso y secundario con tinte gradiente traslúcido" },
+                      { id: "glass", label: "Cristal Translucido / Glass", desc: "Efecto vidrio esmerilado con bisel de cristal coincidente" },
+                      { id: "outline-glow", label: "Borde Neón / Glow Outline", desc: "Mismo grosor y efecto resplandor neón en ambos botones" },
+                      { id: "3d", label: "Efecto 3D / Táctil Pressed", desc: "Misma elevación y sombra extruida inferior con respuesta táctil" },
+                    ].map((item) => {
+                      const isSelected = componentStyles.buttonVariant === item.id;
+                      const primaryStyle = getButtonVariantStyle(item.id, palette.primary, palette.secondary, palette.text, false);
+                      const secondaryStyle = getButtonVariantStyle(item.id, palette.primary, palette.secondary, palette.text, true);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setComponentStyles((prev) => ({ ...prev, buttonVariant: item.id as any }))}
+                          className={`p-3.5 rounded-2xl text-left border transition space-y-2.5 group ${
+                            isSelected
+                              ? "bg-emerald-950/40 border-emerald-500 text-white ring-1 ring-emerald-500"
+                              : "bg-[#181818] hover:bg-[#222] border-[#2A2A2A] text-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold group-hover:text-emerald-300">{item.label}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                          </div>
+                          <p className="text-[10px] text-slate-400">{item.desc}</p>
+
+                          <div className="pt-1 flex items-center justify-center gap-2">
+                            <span
+                              className={`inline-block font-bold transition ${getButtonRadiusClass(componentStyles.buttonRadius)} ${getButtonPaddingClass(componentStyles.buttonPadding)}`}
+                              style={primaryStyle}
+                            >
+                              Primario
+                            </span>
+                            <span
+                              className={`inline-block font-bold transition ${getButtonRadiusClass(componentStyles.buttonRadius)} ${getButtonPaddingClass(componentStyles.buttonPadding)}`}
+                              style={secondaryStyle}
+                            >
+                              Secundario
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </TabsContent>
             </Tabs>
           </div>
 
@@ -620,15 +1029,15 @@ export const StyleConfigView: React.FC<StyleConfigViewProps> = ({
                 />
               </div>
 
-              {/* Simulated UI Section Frame */}
+              {/* Simulated UI Section Frame - Dynamic Radius, Shadow & Button Styles! */}
               <div
-                className="p-5 sm:p-6 rounded-2xl border transition-all duration-300 space-y-4 shadow-xl"
+                className={`p-5 sm:p-6 transition-all duration-300 space-y-4 ${getBorderRadiusClass(componentStyles.borderRadius)} ${getElevationClass(componentStyles.elevation)}`}
                 style={{ backgroundColor: palette.background, color: palette.text, borderColor: `${palette.text}20` }}
               >
                 {/* Badge Pill */}
                 <div>
                   <span
-                    className="inline-block px-2.5 py-1 text-[11px] rounded-full font-bold shadow-sm"
+                    className={`inline-block px-2.5 py-1 text-[11px] font-bold shadow-sm ${getButtonRadiusClass(componentStyles.buttonRadius)}`}
                     style={{
                       backgroundColor: `${palette.secondary}20`,
                       color: palette.secondary,
@@ -658,7 +1067,7 @@ export const StyleConfigView: React.FC<StyleConfigViewProps> = ({
 
                 {/* Stat Box Mockup */}
                 <div
-                  className="p-3 rounded-xl border flex items-center justify-between"
+                  className={`p-3 border flex items-center justify-between ${getBorderRadiusClass(componentStyles.borderRadius)}`}
                   style={{
                     backgroundColor: `${palette.primary}0D`,
                     borderColor: `${palette.primary}30`,
@@ -679,31 +1088,32 @@ export const StyleConfigView: React.FC<StyleConfigViewProps> = ({
                     </div>
                   </div>
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
+                    className={`w-8 h-8 flex items-center justify-center font-bold text-xs ${getButtonRadiusClass(componentStyles.buttonRadius)}`}
                     style={{ backgroundColor: palette.accent, color: "#FFFFFF" }}
                   >
                     🚀
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="pt-2 flex flex-wrap items-center gap-2">
+                {/* Action Buttons with Real Selected Radius, Padding & Variant! */}
+                <div className="pt-2 flex flex-wrap items-center gap-2.5">
                   <button
-                    className="px-4 py-2 rounded-xl text-xs font-bold shadow transition"
-                    style={{ backgroundColor: palette.primary, color: "#FFFFFF", fontFamily: typography.bodyFont }}
-                  >
-                    Botón CTA Primario
-                  </button>
-                  <button
-                    className="px-3.5 py-2 rounded-xl text-xs font-semibold border transition"
+                    className={`transition ${getButtonRadiusClass(componentStyles.buttonRadius)} ${getButtonPaddingClass(componentStyles.buttonPadding)}`}
                     style={{
-                      backgroundColor: "transparent",
-                      color: palette.text,
-                      borderColor: `${palette.text}30`,
                       fontFamily: typography.bodyFont,
+                      ...getButtonVariantStyle(componentStyles.buttonVariant, palette.primary, palette.secondary, palette.text, false),
                     }}
                   >
-                    Saber Más
+                    Botón Primario
+                  </button>
+                  <button
+                    className={`transition ${getButtonRadiusClass(componentStyles.buttonRadius)} ${getButtonPaddingClass(componentStyles.buttonPadding)}`}
+                    style={{
+                      fontFamily: typography.bodyFont,
+                      ...getButtonVariantStyle(componentStyles.buttonVariant, palette.primary, palette.secondary, palette.text, true),
+                    }}
+                  >
+                    Botón Secundario
                   </button>
                 </div>
               </div>

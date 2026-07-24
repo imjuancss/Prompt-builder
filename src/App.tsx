@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Project, StylePreset, ColorPalette, TypographyPair, ConversionVariables } from "./types";
+import { Project, Section, StylePreset, ColorPalette, TypographyPair, ConversionVariables } from "./types";
 import {
   loadProjects,
   saveProject,
@@ -12,6 +12,7 @@ import {
 } from "./utils/storage";
 import { DEFAULT_SECTION_TYPES, PRESET_PALETTES, PRESET_TYPOGRAPHY } from "./data/presets";
 import { createMasterLandingProject } from "./data/masterLandingTemplate";
+import { LANDING_PAGE_TEMPLATES, createProjectFromLandingTemplate } from "./data/landingPageTemplates";
 import { buildSectionPrompt } from "./utils/promptGenerator";
 import { Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -131,6 +132,40 @@ export default function App() {
     const initialTypography = matchedTmpl ? matchedTmpl.typography : PRESET_TYPOGRAPHY[0];
 
     const newProjId = generateId("proj");
+
+    // Check if a specific landing page template was selected
+    const landingTmpl = LANDING_PAGE_TEMPLATES.find((t) => t.id === templateId);
+    if (landingTmpl) {
+      const createdFromLanding = createProjectFromLandingTemplate(
+        landingTmpl.id,
+        name,
+        description,
+        industry,
+        newProjId
+      );
+
+      if (createdFromLanding) {
+        // Apply style override if a custom style template was matched too
+        if (matchedTmpl) {
+          createdFromLanding.styleConfig = {
+            palette: matchedTmpl.palette,
+            typography: matchedTmpl.typography,
+            globalVibe: matchedTmpl.vibe,
+          };
+          createdFromLanding.sections = createdFromLanding.sections.map((sec) => ({
+            ...sec,
+            generatedPrompt: buildSectionPrompt(createdFromLanding, sec),
+          }));
+        }
+
+        const updatedProjects = [createdFromLanding, ...projects];
+        setProjects(updatedProjects);
+        saveProject(createdFromLanding);
+        setActiveProjectId(newProjId);
+        showToast(`Proyecto '${name}' creado desde plantilla '${landingTmpl.name}' (${landingTmpl.sectionCount} secciones).`);
+        return;
+      }
+    }
 
     if (useMasterTemplate) {
       // Create from full 13-section master template
@@ -266,6 +301,103 @@ export default function App() {
     saveProject(newProject);
     setActiveProjectId(newProjId);
     showToast(`Proyecto '${name}' creado correctamente.`);
+  };
+
+  // Create Project From AI Generated Data
+  const handleCreateProjectFromAi = (aiData: any) => {
+    const newProjId = generateId("proj");
+    const now = new Date().toISOString();
+
+    const rawSections = Array.isArray(aiData.sections) ? aiData.sections : [];
+
+    const newProject: Project = {
+      id: newProjId,
+      name: aiData.name || "Landing Page IA",
+      description: aiData.description || "",
+      industry: aiData.industry || "SaaS / Digital",
+      conversionVars: {
+        tone: aiData.conversionVars?.tone || "SaaS Tech / Moderno",
+        layoutPattern: aiData.conversionVars?.layoutPattern || "F-Pattern (Lectura Fluida)",
+        targetAudience: aiData.conversionVars?.targetAudience || "Clientes potenciales y tomadores de decisión",
+        primaryGoal: aiData.conversionVars?.primaryGoal || "Conseguir registros o ventas directas",
+        valueProposition: aiData.conversionVars?.valueProposition || aiData.description || "Solución innovadora para impulsar conversiones.",
+        socialProofDensity: aiData.conversionVars?.socialProofDensity || "Alta (Testimonios + Logos + Métricas + Badges)",
+        interactivity: aiData.conversionVars?.interactivity || "Transiciones fluidas y microinteracciones responsive",
+        framework: "Tailwind CSS v4 + React + Lucide Icons",
+        urgencyTriggers: aiData.conversionVars?.urgencyTriggers ?? true,
+        stickyCta: aiData.conversionVars?.stickyCta ?? true,
+        impeccableCraft: true,
+      },
+      styleConfig: {
+        palette: {
+          name: aiData.styleConfig?.palette?.name || "Paleta Personalizada IA",
+          primary: aiData.styleConfig?.palette?.primary || "#4F46E5",
+          secondary: aiData.styleConfig?.palette?.secondary || "#06B6D4",
+          accent: aiData.styleConfig?.palette?.accent || "#F59E0B",
+          background: aiData.styleConfig?.palette?.background || "#0F172A",
+          surface: aiData.styleConfig?.palette?.surface || "#1E293B",
+          text: aiData.styleConfig?.palette?.text || "#F8FAFC",
+          textMuted: aiData.styleConfig?.palette?.textMuted || "#94A3B8",
+        },
+        typography: {
+          name: aiData.styleConfig?.typography?.name || "Tipografía Gemini AI",
+          headingFont: aiData.styleConfig?.typography?.headingFont || "Plus Jakarta Sans",
+          bodyFont: aiData.styleConfig?.typography?.bodyFont || "Inter",
+        },
+        globalVibe: aiData.styleConfig?.globalVibe || "Generado por Inteligencia Artificial según prompt",
+      },
+      sections: [],
+      createdAt: now,
+      updatedAt: now,
+      history: [
+        {
+          id: generateId("log"),
+          timestamp: new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+          action: "Proyecto estructurado con Inteligencia Artificial (Gemini)",
+          details: `Estructura generada con ${rawSections.length} secciones personalizadas y paleta de colores inteligente.`,
+        },
+      ],
+    };
+
+    // Format and calculate generatedPrompt for each section
+    const formattedSections: Section[] = rawSections.map((sec: any, idx: number) => {
+      const secId = generateId("sec");
+      const sectionObj: Section = {
+        id: secId,
+        type: sec.type || "custom",
+        title: sec.title || `${idx + 1}. Sección`,
+        order: idx + 1,
+        description: sec.description || "",
+        contentObjective: sec.contentObjective || "",
+        keyElements: Array.isArray(sec.keyElements) ? sec.keyElements : [],
+        copyDraft: {
+          headline: sec.copyDraft?.headline || "",
+          subheadline: sec.copyDraft?.subheadline || "",
+          ctaText: sec.copyDraft?.ctaText || "Comenzar Ahora",
+          secondaryCtaText: sec.copyDraft?.secondaryCtaText || "",
+          bulletPoints: Array.isArray(sec.copyDraft?.bulletPoints) ? sec.copyDraft.bulletPoints : [],
+        },
+        sectionStyleOverrides: sec.sectionStyleOverrides || {
+          bgStyle: "Solid Surface",
+          layoutVariant: "Centered Focus",
+          paddingVertical: "Standard (py-20)",
+        },
+        generatedPrompt: "",
+        updatedAt: now,
+        isAiEnhanced: true,
+      };
+
+      sectionObj.generatedPrompt = buildSectionPrompt(newProject, sectionObj);
+      return sectionObj;
+    });
+
+    newProject.sections = formattedSections;
+
+    const updatedProjects = [newProject, ...projects];
+    setProjects(updatedProjects);
+    saveProject(newProject);
+    setActiveProjectId(newProjId);
+    showToast(`✨ Proyecto '${newProject.name}' estructurado con IA (${formattedSections.length} secciones).`);
   };
 
   // Duplicate Project
@@ -456,6 +588,7 @@ export default function App() {
             templates={templates}
             onOpenProject={(pId) => setActiveProjectId(pId)}
             onCreateProject={handleCreateProject}
+            onCreateProjectFromAi={handleCreateProjectFromAi}
             onEditProject={(proj) => setEditingProject(proj)}
             onDuplicateProject={handleDuplicateProject}
             onDeleteProject={(pId) => setProjectToDeleteId(pId)}

@@ -85,8 +85,15 @@ export type SectionType =
   | "footer"
   | "custom";
 
+export type SectionTextureType = "none" | "grid" | "dots";
+export type GridSizeOption = "small" | "medium" | "large";
+export type DotsSpacingOption = "dense" | "normal" | "sparse";
+
 export interface SectionStyleOverrides {
   bgStyle?: "Solid Primary" | "Solid Surface" | "Gradient Accent" | "Dark Contrast" | "Glassmorphism Card";
+  bgTextureType?: SectionTextureType;
+  gridSize?: GridSizeOption;
+  dotsSpacing?: DotsSpacingOption;
   layoutVariant?: "Split 50/50" | "Centered Focus" | "Bento Grid 3 Cols" | "Carousel / Slider" | "Sticky Sidebar";
   paddingVertical?: "Compact (py-12)" | "Standard (py-20)" | "Spacious (py-28)";
   animationStyle?: "Framer Motion Fluid" | "GSAP ScrollTrigger" | "CSS Keyframes Micro-interactions" | "Minimal Fade-In";
@@ -124,6 +131,20 @@ export interface ProjectHistoryLog {
   details?: string;
 }
 
+export type BorderRadiusOption = "none" | "sm" | "md" | "lg" | "xl" | "full";
+export type ElevationShadowOption = "none" | "subtle" | "medium" | "high" | "glow";
+export type ButtonRadiusOption = "none" | "sm" | "md" | "lg" | "full";
+export type ButtonPaddingOption = "compact" | "standard" | "spacious";
+export type ButtonVariantOption = "solid" | "gradient" | "glass" | "outline-glow" | "3d";
+
+export interface ComponentStyleConfig {
+  borderRadius?: BorderRadiusOption;
+  elevation?: ElevationShadowOption;
+  buttonRadius?: ButtonRadiusOption;
+  buttonPadding?: ButtonPaddingOption;
+  buttonVariant?: ButtonVariantOption;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -134,6 +155,7 @@ export interface Project {
     palette: ColorPalette;
     typography: TypographyPair;
     globalVibe: string;
+    componentStyles?: ComponentStyleConfig;
   };
   sections: Section[];
   createdAt: string;

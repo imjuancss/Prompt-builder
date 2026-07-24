@@ -197,6 +197,117 @@ Devuelve la respuesta en formato JSON con la siguiente estructura:
   }
 });
 
+// API Route: AI Full Project Generator from Natural Language Prompt
+app.post("/api/gemini/generate-full-project", async (req, res) => {
+  try {
+    const { prompt: userIdea } = req.body;
+
+    if (!userIdea || typeof userIdea !== "string" || !userIdea.trim()) {
+      return res.status(400).json({ error: "El prompt del proyecto es requerido." });
+    }
+
+    const ai = getGeminiClient();
+
+    const systemInstruction = `Eres un Arquitecto de Software Principal, Diseñador UI/UX Senior y Especialista en Optimización de Conversiones (CRO).
+Tu misión es recibir una idea o prompt del usuario y transformarlo en la estructura completa de un Proyecto de Landing Page de Alta Conversión.
+Devuelve SIEMPRE la respuesta estrictamente en formato JSON válido acorde al schema solicitado, sin texto antes ni después.`;
+
+    const prompt = `Analiza la siguiente idea de proyecto o negocio y genera una estructura de landing page de alta conversión personalizada:
+
+IDEA DEL USUARIO: "${userIdea.trim()}"
+
+Estructura JSON requerida (Escribe todos los textos en español claro, profesional y persuasivo):
+{
+  "name": "Nombre conciso y profesional para el proyecto o producto (máx 4 palabras)",
+  "description": "Descripción clara de la propuesta en 1-2 oraciones",
+  "industry": "Categoría o Industria (ej: SaaS B2B, Fitness & Wellness, Fintech, E-commerce, EdTech, Agencia Creativa)",
+  "conversionVars": {
+    "tone": "SaaS Tech / Moderno",
+    "layoutPattern": "F-Pattern (Lectura Fluida)",
+    "targetAudience": "Descripción concisa del público objetivo",
+    "primaryGoal": "Objetivo principal de conversión",
+    "valueProposition": "Propuesta Única de Valor (UVP) directa",
+    "socialProofDensity": "Alta (Testimonios + Logos + Métricas + Badges)",
+    "interactivity": "Descripción corta de animaciones e interactividad deseada",
+    "framework": "Tailwind CSS v4 + React + Lucide Icons",
+    "urgencyTriggers": true,
+    "stickyCta": true,
+    "impeccableCraft": true
+  },
+  "styleConfig": {
+    "palette": {
+      "name": "Nombre descriptivo de la paleta de colores",
+      "primary": "#HEX",
+      "secondary": "#HEX",
+      "accent": "#HEX",
+      "background": "#HEX (Neutro elegante con matiz sutil)",
+      "surface": "#HEX",
+      "text": "#HEX",
+      "textMuted": "#HEX"
+    },
+    "typography": {
+      "name": "Nombre del combo tipográfico",
+      "headingFont": "Nombre exacto de fuente en Google Fonts para títulos (ej: Plus Jakarta Sans, Outfit, Inter, Syne, Cabinet Grotesk, Space Grotesk, Playfair Display)",
+      "bodyFont": "Nombre exacto de fuente en Google Fonts para cuerpo (ej: Plus Jakarta Sans, Inter, DM Sans, Roboto)"
+    },
+    "globalVibe": "Atmósfera e identidad de marca en 1 frase"
+  },
+  "sections": [
+    {
+      "type": "hero",
+      "title": "1. Hero Above-the-Fold",
+      "description": "Sección principal con propuesta de valor y CTA de conversión inmediata",
+      "contentObjective": "Captar la atención en menos de 5 segundos y guiar hacia la acción principal",
+      "keyElements": ["Headline de alto impacto", "Subheadline con beneficios cuantitativos", "CTA principal y secundario", "Social proof badge"],
+      "copyDraft": {
+        "headline": "Titular enérgico y persuasivo específico para la idea",
+        "subheadline": "Subtitular claro explicando cómo resuelve el problema principal",
+        "ctaText": "Texto del botón principal de acción",
+        "secondaryCtaText": "Texto del botón secundario",
+        "bulletPoints": ["Beneficio clave 1", "Beneficio clave 2", "Beneficio clave 3"]
+      },
+      "sectionStyleOverrides": {
+        "bgStyle": "Solid Surface",
+        "layoutVariant": "Split 50/50",
+        "paddingVertical": "Standard (py-20)"
+      }
+    }
+  ]
+}
+
+REGLAS DE SECCIONES:
+Genera entre 6 y 10 secciones organizadas en un flujo de conversión óptimo. Por ejemplo:
+1. 'hero': Hero principal
+2. 'social_proof_testimonials': Logos de marcas o métricas rápidas de tracción
+3. 'problem_solution': Matriz de agitación de problemas y solución
+4. 'features': Bento grid o lista de características principales
+5. 'process_how_it_works': Paso a paso de cómo funciona en 3 simples pasos
+6. 'social_proof_testimonials': Testimonios reales y casos de éxito
+7. 'pricing': Tabla de planes / precios con la opción más recomendada destacada
+8. 'faq': Preguntas frecuentes respondiendo objeciones típicas
+9. 'lead_form': Formulario final de captación de leads / prueba gratis
+10. 'footer': Navegación y copyright
+
+Los campos 'type' deben ser exactamente alguno de: 'hero', 'problem_solution', 'value_prop', 'features', 'process_how_it_works', 'social_proof_testimonials', 'stats_counter', 'comparison_table', 'pricing', 'faq', 'lead_form', 'footer', 'custom'.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: prompt,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        temperature: 0.7,
+      },
+    });
+
+    const projectData = JSON.parse(response.text || "{}");
+    return res.json(projectData);
+  } catch (error: any) {
+    console.error("Error generating full project with AI:", error);
+    return res.status(500).json({ error: error.message || "Error al estructurar proyecto con IA" });
+  }
+});
+
 // Serve frontend with Vite middleware or static dist
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
