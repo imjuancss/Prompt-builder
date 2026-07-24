@@ -1,0 +1,6 @@
+{
+  "name": "Landing Prompt Architect",
+  "description": "Estructurador inteligente de prompts sección por sección para diseñar landing pages de alta conversión con paletas, tipografías y sugerencias de IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
