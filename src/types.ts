@@ -66,6 +66,8 @@ export interface ConversionVariables {
   framework: OutputFramework;
   urgencyTriggers?: boolean;
   stickyCta?: boolean;
+  impeccableCraft?: boolean;
+  targetLLM?: string;
 }
 
 export type SectionType =
@@ -87,6 +89,8 @@ export interface SectionStyleOverrides {
   bgStyle?: "Solid Primary" | "Solid Surface" | "Gradient Accent" | "Dark Contrast" | "Glassmorphism Card";
   layoutVariant?: "Split 50/50" | "Centered Focus" | "Bento Grid 3 Cols" | "Carousel / Slider" | "Sticky Sidebar";
   paddingVertical?: "Compact (py-12)" | "Standard (py-20)" | "Spacious (py-28)";
+  animationStyle?: "Framer Motion Fluid" | "GSAP ScrollTrigger" | "CSS Keyframes Micro-interactions" | "Minimal Fade-In";
+  libraryEnhancements?: string[];
 }
 
 export interface SectionCopyDraft {

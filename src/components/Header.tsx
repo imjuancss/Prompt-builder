@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, Layers, CheckCircle, RefreshCw, Cpu } from "lucide-react";
+import { Sparkles, Layers, CheckCircle, RefreshCw, Cpu, Sliders, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -12,6 +12,7 @@ interface HeaderProps {
   onOpenStyleConfig?: () => void;
   onOpenHistory?: () => void;
   onOpenAiContext?: () => void;
+  onOpenConversionVars?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenStyleConfig,
   onOpenHistory,
   onOpenAiContext,
+  onOpenConversionVars,
 }) => {
   return (
     <header className="sticky top-0 z-40 h-14 bg-[#181818] border-b border-[#2A2A2A] text-[#E0E0E0] px-4 sm:px-6 flex items-center justify-between">
@@ -74,12 +76,37 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Global Actions */}
         <div className="flex items-center gap-2">
+          {currentProjectName && onOpenStyleConfig && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenStyleConfig}
+              className="bg-indigo-950/70 hover:bg-indigo-900/90 text-indigo-200 border-indigo-500/40 flex items-center gap-1.5 text-xs font-semibold shadow-sm"
+              title="Personalizar Paleta de Colores, Fuentes Google Fonts y Visualizador"
+            >
+              <Palette className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Estilo & Tipografía</span>
+            </Button>
+          )}
+
+          {currentProjectName && onOpenConversionVars && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenConversionVars}
+              className="bg-[#2A2A2A] hover:bg-[#333] text-white border-[#3A3A3A] flex items-center gap-1.5 text-xs font-medium"
+            >
+              <Sliders className="w-3.5 h-3.5 text-blue-400" />
+              <span>Conversion Vars</span>
+            </Button>
+          )}
+
           {onOpenAiContext && (
             <Button
               variant="outline"
               size="sm"
               onClick={onOpenAiContext}
-              className="bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border-indigo-500/30"
+              className="bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border-indigo-500/30 text-xs"
               title="Ver Guía de Contexto y Prompts Benchmark para IA"
             >
               <Cpu className="w-3.5 h-3.5 text-cyan-400" />
@@ -87,18 +114,11 @@ export const Header: React.FC<HeaderProps> = ({
             </Button>
           )}
 
-          {currentProjectName && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onGoToDashboard}
-            >
-              Proyectos
-            </Button>
-          )}
+
         </div>
       </div>
     </header>
   );
 };
+
 

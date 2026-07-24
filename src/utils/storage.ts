@@ -1,5 +1,6 @@
 import { Project, StylePreset, ProjectHistoryLog } from "../types";
 import { INITIAL_PRESET_TEMPLATES, PRESET_PALETTES, PRESET_TYPOGRAPHY, DEFAULT_SECTION_TYPES } from "../data/presets";
+import { createMasterLandingProject } from "../data/masterLandingTemplate";
 import { buildSectionPrompt } from "./promptGenerator";
 
 const PROJECTS_STORAGE_KEY = "landing_prompt_architect_projects_v3";
@@ -15,13 +16,20 @@ export function loadProjects(): Project[] {
   try {
     const raw = localStorage.getItem(PROJECTS_STORAGE_KEY);
     if (!raw) {
-      return [];
+      const initialMaster = createMasterLandingProject("proj_master_default");
+      saveProjects([initialMaster]);
+      return [initialMaster];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed;
+    }
+    const initialMaster = createMasterLandingProject("proj_master_default");
+    saveProjects([initialMaster]);
+    return [initialMaster];
   } catch (err) {
     console.error("Error loading projects from storage:", err);
-    return [];
+    return [createMasterLandingProject("proj_master_default")];
   }
 }
 

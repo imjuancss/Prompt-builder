@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AI_PROMPT_COGNITIVE_GUIDE, BENCHMARK_EXAMPLES } from "../data/aiPromptContext";
-import { Cpu, BookOpen, Copy, Check, Search, Sparkles, Layers, Code, Zap, X } from "lucide-react";
+import { IMPECCABLE_CRAFT_DIRECTIVES } from "../utils/promptGenerator";
+import { Cpu, BookOpen, Copy, Check, Search, Sparkles, Layers, Code, Zap, X, ShieldCheck, Palette, Scale, Sliders } from "lucide-react";
 
 interface AiContextGuideModalProps {
   onClose: () => void;
@@ -11,7 +12,7 @@ export const AiContextGuideModal: React.FC<AiContextGuideModalProps> = ({
   onClose,
   onShowToast,
 }) => {
-  const [activeTab, setActiveTab] = useState<"guide" | "examples" | "llm_behavior">("guide");
+  const [activeTab, setActiveTab] = useState<"guide" | "examples" | "llm_behavior" | "impeccable">("impeccable");
   const [selectedExampleId, setSelectedExampleId] = useState<string>(BENCHMARK_EXAMPLES[0].id);
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState(false);
@@ -65,41 +66,53 @@ export const AiContextGuideModal: React.FC<AiContextGuideModalProps> = ({
 
         {/* Tab Navigation */}
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 gap-3 shrink-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <button
+              onClick={() => setActiveTab("impeccable")}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 ${
+                activeTab === "impeccable"
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/25"
+                  : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 text-cyan-300" />
+              <span>💎 Impeccable Craft (Paul Bakaus)</span>
+            </button>
+
             <button
               onClick={() => setActiveTab("guide")}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 shrink-0 ${
                 activeTab === "guide"
                   ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
                   : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
               }`}
             >
               <Zap className="w-3.5 h-3.5" />
-              <span>🧠 Arquitectura Cognitiva de LLM</span>
+              <span>🧠 Arquitectura Cognitiva LLM</span>
             </button>
 
             <button
               onClick={() => setActiveTab("examples")}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 shrink-0 ${
                 activeTab === "examples"
                   ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
                   : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span>📚 Ejemplos Benchmark ({BENCHMARK_EXAMPLES.length})</span>
+              <span>📚 Prompts Benchmark ({BENCHMARK_EXAMPLES.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab("llm_behavior")}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 shrink-0 ${
                 activeTab === "llm_behavior"
                   ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
                   : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-              <span>⚡ Cómo Actúa la IA con Prompts</span>
+              <span>⚡ Comportamiento IA</span>
             </button>
           </div>
 
@@ -112,7 +125,102 @@ export const AiContextGuideModal: React.FC<AiContextGuideModalProps> = ({
               <span>Copiar Prompt Seleccionado</span>
             </button>
           )}
+
+          {activeTab === "impeccable" && (
+            <button
+              onClick={() => handleCopyText(IMPECCABLE_CRAFT_DIRECTIVES, "Regulación de Diseño Impeccable")}
+              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shrink-0"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>Copiar Directivas Impeccable</span>
+            </button>
+          )}
         </div>
+
+        {/* TAB: IMPECCABLE CRAFT (PAUL BAKAUS) */}
+        {activeTab === "impeccable" && (
+          <div className="space-y-4 overflow-y-auto pr-1 flex-1 text-xs text-slate-300">
+            {/* Banner Header */}
+            <div className="p-4 bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border border-blue-500/30 rounded-2xl flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-white text-sm">Estándar de Diseño Impeccable (by Paul Bakaus)</h3>
+                  <span className="px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-mono text-[10px] rounded-full font-semibold">
+                    Anti-Slop UI Spec
+                  </span>
+                </div>
+                <p className="text-slate-300 leading-relaxed text-xs">
+                  Impeccable es el protocolo de generación UI más avanzado para eliminar clichés de IA (gradientes púrpura/azul genéricos, tarjetas anidadas, textos repetitivos de SaaS) introduciendo matemáticas exactas de bordes, proporciones de botones y reglas WCAG AA.
+                </p>
+              </div>
+            </div>
+
+            {/* Key Pillar Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5">
+                <div className="flex items-center gap-2 text-rose-400 font-bold text-xs">
+                  <Palette className="w-4 h-4" />
+                  <span>1. Regla Anti-Slop Visual</span>
+                </div>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  Cero gradientes cliché púrpura/azul, cero tarjetas dentro de tarjetas, sin verbos trillados de SaaS ("supercharge", "empower").
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                  <Scale className="w-4 h-4" />
+                  <span>2. Radio Anidado: r_in = r_out - p</span>
+                </div>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  El radio interno del elemento hijo equivale al radio exterior menos el padding. Previene esquinas que chocan visualmente.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5">
+                <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs">
+                  <Sliders className="w-4 h-4" />
+                  <span>3. Ratio de Botón px = 2 * py</span>
+                </div>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  El padding horizontal del botón es siempre el doble del vertical (<code className="text-emerald-300">px-5 py-2.5</code>). Labels en 1 línea.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5">
+                <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>4. Contraste & WCAG AA</span>
+                </div>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  Neutros con &lt;5% saturación, contraste mínimo 4.5:1 en cuerpo y límite de 65-75 caracteres por línea (<code className="text-indigo-300">max-w-[65ch]</code>).
+                </p>
+              </div>
+            </div>
+
+            {/* Directives Raw Text Code Block */}
+            <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 space-y-2">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span className="text-xs font-bold text-white flex items-center gap-2">
+                  <Code className="w-4 h-4 text-cyan-400" />
+                  <span>Directiva Inyectada Automáticamente en Todos tus Prompts</span>
+                </span>
+                <button
+                  onClick={() => handleCopyText(IMPECCABLE_CRAFT_DIRECTIVES, "Directivas de Craft Impeccable")}
+                  className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold rounded-lg transition flex items-center gap-1.5"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>Copiar Directivas</span>
+                </button>
+              </div>
+
+              <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed max-h-[220px] overflow-y-auto">
+                {IMPECCABLE_CRAFT_DIRECTIVES}
+              </pre>
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: COGNITIVE GUIDE */}
         {activeTab === "guide" && (

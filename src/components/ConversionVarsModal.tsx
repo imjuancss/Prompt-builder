@@ -39,6 +39,14 @@ const FRAMEWORK_OPTIONS: OutputFramework[] = [
   "Framer Motion + React Components",
 ];
 
+const TARGET_LLM_OPTIONS = [
+  "Gemini (Google GenAI)",
+  "Claude 3.5 Sonnet / Haiku (Anthropic)",
+  "GPT-4o / ChatGPT (OpenAI)",
+  "Cursor / v0 / Bolt (Code AI Assistant)",
+  "Default / Genérico",
+];
+
 export const ConversionVarsModal: React.FC<ConversionVarsModalProps> = ({
   project,
   onSaveConversionVars,
@@ -46,6 +54,8 @@ export const ConversionVarsModal: React.FC<ConversionVarsModalProps> = ({
 }) => {
   const [vars, setVars] = useState<ConversionVariables>({
     ...project.conversionVars,
+    targetLLM: project.conversionVars.targetLLM || "Gemini (Google GenAI)",
+    interactivity: project.conversionVars.interactivity || "Transiciones suaves con Framer Motion, hover de tarjetas y micro-interacciones responsive",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -152,20 +162,20 @@ export const ConversionVarsModal: React.FC<ConversionVarsModalProps> = ({
             />
           </div>
 
-          {/* Social Proof & Framework */}
+          {/* Target LLM & Interactivity */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-300">
-                Densidad de Prueba Social Requerida
+                Modelo de IA Objetivo (Target LLM)
               </label>
               <select
-                value={vars.socialProofDensity}
-                onChange={(e) => setVars({ ...vars, socialProofDensity: e.target.value as SocialProofDensity })}
+                value={vars.targetLLM || "Gemini (Google GenAI)"}
+                onChange={(e) => setVars({ ...vars, targetLLM: e.target.value })}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
               >
-                {PROOF_OPTIONS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
+                {TARGET_LLM_OPTIONS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
                   </option>
                 ))}
               </select>
@@ -189,8 +199,61 @@ export const ConversionVarsModal: React.FC<ConversionVarsModalProps> = ({
             </div>
           </div>
 
+          {/* Social Proof & Interactivity */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300">
+                Densidad de Prueba Social Requerida
+              </label>
+              <select
+                value={vars.socialProofDensity}
+                onChange={(e) => setVars({ ...vars, socialProofDensity: e.target.value as SocialProofDensity })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+              >
+                {PROOF_OPTIONS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300">
+                Nivel de Interactividad y Animaciones
+              </label>
+              <input
+                type="text"
+                placeholder="Ej: Animaciones fluidas con Framer Motion, microinteracciones responsive"
+                value={vars.interactivity || ""}
+                onChange={(e) => setVars({ ...vars, interactivity: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
           {/* Conversion Toggles */}
           <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-blue-500/30 bg-gradient-to-r from-blue-950/20 to-indigo-950/20 cursor-pointer col-span-1 sm:col-span-2">
+              <input
+                type="checkbox"
+                checked={vars.impeccableCraft !== false}
+                onChange={(e) => setVars({ ...vars, impeccableCraft: e.target.checked })}
+                className="rounded text-blue-600 focus:ring-0 mt-0.5"
+              />
+              <div className="flex flex-col space-y-0.5">
+                <span className="text-xs text-white font-bold flex items-center gap-1.5">
+                  <span>💎 Protocolo Impeccable UI Craft (by Paul Bakaus)</span>
+                  <span className="px-1.5 py-0.5 text-[9px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded font-mono font-semibold">
+                    Anti-Slop Standard
+                  </span>
+                </span>
+                <span className="text-[11px] text-slate-400 leading-snug">
+                  Inyecta matemáticas exactas de bordes anidados (r_in = r_out - p), proporciones de botones 2:1, legibilidad WCAG AA y eliminación estricta de clichés visuales.
+                </span>
+              </div>
+            </label>
+
             <label className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
               <input
                 type="checkbox"

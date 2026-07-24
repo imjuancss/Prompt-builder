@@ -11,6 +11,7 @@ import {
   generateId,
 } from "./utils/storage";
 import { DEFAULT_SECTION_TYPES, PRESET_PALETTES, PRESET_TYPOGRAPHY } from "./data/presets";
+import { createMasterLandingProject } from "./data/masterLandingTemplate";
 import { buildSectionPrompt } from "./utils/promptGenerator";
 import { Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -26,6 +27,7 @@ import { AddSectionModal } from "./components/AddSectionModal";
 import { GlobalPromptModal } from "./components/GlobalPromptModal";
 import { HistoryLogModal } from "./components/HistoryLogModal";
 import { AiContextGuideModal } from "./components/AiContextGuideModal";
+import { EditProjectModal } from "./components/EditProjectModal";
 import { Toast } from "./components/Toast";
 
 export default function App() {
@@ -33,6 +35,7 @@ export default function App() {
   const [templates, setTemplates] = useState<StylePreset[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [projectToDeleteId, setProjectToDeleteId] = useState<string | null>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   // Autosave State
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -85,17 +88,42 @@ export default function App() {
     }, 300);
   };
 
+  // Save Edited Project Details
+  const handleSaveEditedProject = (updatedProj: Project) => {
+    // Regenerate generated prompts for all sections using updated project info
+    const updatedSections = updatedProj.sections.map((sec) => ({
+      ...sec,
+      generatedPrompt: buildSectionPrompt(updatedProj, sec),
+      updatedAt: new Date().toISOString(),
+    }));
+
+    const finalProject: Project = {
+      ...updatedProj,
+      sections: updatedSections,
+      updatedAt: new Date().toISOString(),
+    };
+
+    handleUpdateActiveProject(
+      finalProject,
+      `Datos del proyecto actualizados: '${finalProject.name}'`
+    );
+    showToast(`Proyecto '${finalProject.name}' actualizado correctamente.`);
+    setEditingProject(null);
+  };
+
   // Create Project
   const handleCreateProject = ({
     name,
     description,
     industry,
     templateId,
+    useMasterTemplate = true,
   }: {
     name: string;
     description: string;
     industry: string;
     templateId?: string;
+    useMasterTemplate?: boolean;
   }) => {
     const matchedTmpl = templates.find((t) => t.id === templateId);
 
@@ -103,6 +131,46 @@ export default function App() {
     const initialTypography = matchedTmpl ? matchedTmpl.typography : PRESET_TYPOGRAPHY[0];
 
     const newProjId = generateId("proj");
+
+    if (useMasterTemplate) {
+      // Create from full 13-section master template
+      const masterTemplate = createMasterLandingProject(newProjId);
+      const newProject: Project = {
+        ...masterTemplate,
+        name,
+        description: description || masterTemplate.description,
+        industry: industry || masterTemplate.industry,
+        styleConfig: {
+          palette: initialPalette,
+          typography: initialTypography,
+          globalVibe: matchedTmpl?.vibe || masterTemplate.styleConfig.globalVibe,
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        history: [
+          {
+            id: generateId("log"),
+            timestamp: new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+            action: "Proyecto creado desde la Plantilla Maestra de Conversión (Lovable Standards)",
+            details: `Inicializado con 13 secciones de alta conversión y estilo '${matchedTmpl?.name || "SaaS Indigo"}'.`,
+          },
+        ],
+      };
+
+      // Regenerate prompts for all 13 sections with project details
+      newProject.sections = newProject.sections.map((sec) => ({
+        ...sec,
+        generatedPrompt: buildSectionPrompt(newProject, sec),
+        updatedAt: new Date().toISOString(),
+      }));
+
+      const updatedProjects = [newProject, ...projects];
+      setProjects(updatedProjects);
+      saveProject(newProject);
+      setActiveProjectId(newProjId);
+      showToast(`Proyecto '${name}' creado con 13 secciones maestras de alta conversión.`);
+      return;
+    }
 
     const newProject: Project = {
       id: newProjId,
@@ -352,6 +420,7 @@ export default function App() {
         isSaving={isSaving}
         lastSavedTime={lastSavedTime}
         onGoToDashboard={() => setActiveProjectId(null)}
+        onOpenConversionVars={() => setActiveModal("conversion_vars")}
         onOpenGlobalPrompt={() => setActiveModal("global_prompt")}
         onOpenStyleConfig={() => setActiveModal("style_config")}
         onOpenHistory={() => setActiveModal("history_log")}
@@ -378,6 +447,7 @@ export default function App() {
             onOpenAddSectionModal={() => setActiveModal("add_section")}
             onShowToast={showToast}
             onOpenAiContext={() => setActiveModal("ai_context")}
+            onOpenEditProject={() => setEditingProject(activeProject)}
             onDeleteProject={() => setProjectToDeleteId(activeProject.id)}
           />
         ) : (
@@ -386,6 +456,7 @@ export default function App() {
             templates={templates}
             onOpenProject={(pId) => setActiveProjectId(pId)}
             onCreateProject={handleCreateProject}
+            onEditProject={(proj) => setEditingProject(proj)}
             onDuplicateProject={handleDuplicateProject}
             onDeleteProject={(pId) => setProjectToDeleteId(pId)}
             onDeleteTemplate={handleDeleteTemplate}
@@ -393,6 +464,14 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Edit Project Modal */}
+      <EditProjectModal
+        isOpen={!!editingProject}
+        project={editingProject}
+        onClose={() => setEditingProject(null)}
+        onSave={handleSaveEditedProject}
+      />
 
       {/* MODALS */}
       {projectToDeleteId && (

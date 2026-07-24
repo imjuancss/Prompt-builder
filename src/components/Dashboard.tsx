@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Project, StylePreset } from "../types";
-import { Plus, FolderKanban, Sparkles, Copy, Trash2, ArrowRight, Layers, Palette, Type, Clock, Search, Cpu } from "lucide-react";
+import { Plus, FolderKanban, Sparkles, Copy, Trash2, ArrowRight, Layers, Palette, Type, Clock, Search, Cpu, Pencil } from "lucide-react";
 import { PRESET_PALETTES, PRESET_TYPOGRAPHY } from "../data/presets";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,8 @@ interface DashboardProps {
   projects: Project[];
   templates: StylePreset[];
   onOpenProject: (projectId: string) => void;
-  onCreateProject: (projectData: { name: string; description: string; industry: string; templateId?: string }) => void;
+  onCreateProject: (projectData: { name: string; description: string; industry: string; templateId?: string; useMasterTemplate?: boolean }) => void;
+  onEditProject?: (project: Project) => void;
   onDuplicateProject: (project: Project) => void;
   onDeleteProject: (projectId: string) => void;
   onDeleteTemplate: (templateId: string) => void;
@@ -24,6 +25,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   templates,
   onOpenProject,
   onCreateProject,
+  onEditProject,
   onDuplicateProject,
   onDeleteProject,
   onDeleteTemplate,
@@ -39,6 +41,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [newProjectDesc, setNewProjectDesc] = useState("");
   const [newProjectIndustry, setNewProjectIndustry] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [useMasterTemplate, setUseMasterTemplate] = useState<boolean>(true);
 
   const filteredProjects = projects.filter(
     (p) =>
@@ -56,12 +59,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
       description: newProjectDesc.trim(),
       industry: newProjectIndustry.trim() || "Digital & Tech",
       templateId: selectedTemplateId || undefined,
+      useMasterTemplate,
     });
 
     setNewProjectName("");
     setNewProjectDesc("");
     setNewProjectIndustry("");
     setSelectedTemplateId("");
+    setUseMasterTemplate(true);
     setIsCreateModalOpen(false);
   };
 
@@ -110,16 +115,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   className="w-full bg-[#181818] border border-[#2A2A2A] rounded pl-9 pr-3 py-1.5 text-xs text-[#E0E0E0] placeholder-[#666] focus:outline-none focus:border-blue-500"
                 />
               </div>
-            )}
-
-            {onOpenAiContext && (
-              <button
-                onClick={onOpenAiContext}
-                className="px-3 py-1.5 bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-500/30 font-medium text-xs rounded transition flex items-center gap-1.5"
-              >
-                <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Guía IA</span>
-              </button>
             )}
 
             <button
@@ -212,12 +207,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1.5">
+                          {onEditProject && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditProject(project);
+                              }}
+                              className="p-1.5 rounded bg-[#222] hover:bg-blue-950/60 hover:text-blue-400 text-[#AAA] border border-[#333] transition"
+                              title="Editar Datos del Proyecto"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          )}
+
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               onDuplicateProject(project);
                             }}
-                            className="p-1 rounded bg-[#222] hover:bg-[#2A2A2A] text-[#AAA] border border-[#333] transition"
+                            className="p-1.5 rounded bg-[#222] hover:bg-[#2A2A2A] text-[#AAA] border border-[#333] transition"
                             title="Duplicar Proyecto"
                           >
                             <Copy className="w-3 h-3" />
@@ -410,6 +418,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Master Template Option */}
+            <div className="bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-slate-900 border border-blue-500/30 rounded-xl p-3 flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="useMasterTemplateCheck"
+                checked={useMasterTemplate}
+                onChange={(e) => setUseMasterTemplate(e.target.checked)}
+                className="mt-0.5 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="useMasterTemplateCheck" className="text-xs cursor-pointer select-none">
+                <span className="font-bold text-blue-300 block mb-0.5 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                  Cargar las 13 Secciones Maestras (Lovable Best Practices)
+                </span>
+                <span className="text-slate-400 block text-[11px] leading-relaxed">
+                  Pre-carga la estructura completa de conversión: Hero Above-the-Fold, Prueba Social, Matriz PAS, Bento Grid, Onboarding 3 pasos, Stats, Comparativa, Testimonios, Precios con garantía, FAQ y Lead Magnet.
+                </span>
+              </label>
             </div>
 
             <DialogFooter className="pt-2">
