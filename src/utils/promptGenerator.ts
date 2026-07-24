@@ -1,167 +1,154 @@
-import { Project, Section } from "../types";
+import { Project, Section, SectionType } from "../types";
 
-/**
- * Generates an ultra-detailed structured prompt for a single landing page section
- * adhering strictly to the project's global design rules, conversion variables, and section copy.
- */
-export function buildSectionPrompt(project: Project, section: Section): string {
-  const { palette, typography, globalVibe } = project.styleConfig;
-  const { tone, layoutPattern, targetAudience, primaryGoal, valueProposition, socialProofDensity, framework } = project.conversionVars;
-  const copy = section.copyDraft;
-  const overrides = section.sectionStyleOverrides || {};
+const SECTION_CONFIGS: Record<SectionType, { description: string; keyFocus: string[]; recommendedElements: string[]; accessibilityNotes: string[]; seoGuidelines: string[]; codeExamples?: string; }> = {
+  hero: { description: "Sección principal de impacto inmediato", keyFocus: ["Propuesta clara en <5s", "CTA visible sin scroll"], recommendedElements: ["H1 único", "Subheadline", "CTA principal"], accessibilityNotes: ["Contraste 4.5:1", "Alt text en imágenes"], seoGuidelines: ["H1 con keyword principal"], codeExamples: "// Hero example" },
+  features: { description: "Detalle de funcionalidades", keyFocus: ["Features vinculadas a beneficios"], recommendedElements: ["Grid de features", "Iconos distintivos"], accessibilityNotes: ["Grid responsive"], seoGuidelines: ["Keywords en H3"], codeExamples: "// Features grid" },
+  pricing: { description: "Presentación de planes y precios", keyFocus: ["Transparencia total", "Plan destacado claro"], recommendedElements: ["3 planes máximo", "Precio con periodo"], accessibilityNotes: ["Precios legibles"], seoGuidelines: ["Schema Offer"], codeExamples: "// Pricing card" },
+  faq: { description: "Resolución de objeciones", keyFocus: ["Preguntas reales", "Respuestas concisas"], recommendedElements: ["Accordion", "5-10 preguntas"], accessibilityNotes: ["ARIA expanded"], seoGuidelines: ["Schema FAQPage"], codeExamples: "// FAQ accordion" },
+  testimonials: { description: "Validación social", keyFocus: ["Autenticidad", "Resultados cuantificables"], recommendedElements: ["Foto + nombre + cargo", "Métricas"], accessibilityNotes: ["Alt text en fotos"], seoGuidelines: ["Schema Review"], codeExamples: "// Testimonial card" },
+  problem_solution: { description: "Identifica dolor y solución", keyFocus: ["Empatía", "Contraste antes/después"], recommendedElements: ["Descripción del problema", "Presentación solución"], accessibilityNotes: ["Estructura semántica"], seoGuidelines: ["Keywords en H2"], codeExamples: "// Problem-solution" },
+  value_prop: { description: "Comunica diferenciadores", keyFocus: ["Diferenciadores claros", "Beneficios medibles"], recommendedElements: ["3-4 pilares", "Métricas concretas"], accessibilityNotes: ["Listas semánticas"], seoGuidelines: ["Schema Product"], codeExamples: "// Value prop" },
+  process_how_it_works: { description: "Explica paso a paso", keyFocus: ["Simplicidad", "Progreso visual"], recommendedElements: ["3-5 pasos", "Numeración"], accessibilityNotes: ["Orden de lectura"], seoGuidelines: ["Schema HowTo"], codeExamples: "// Process steps" },
+  stats_counter: { description: "Métricas de tracción", keyFocus: ["Números memorables", "Contexto"], recommendedElements: ["3-5 métricas", "Iconos"], accessibilityNotes: ["Números como texto"], seoGuidelines: ["Schema Organization"], codeExamples: "// Stats counter" },
+  comparison_table: { description: "Comparativa competitiva", keyFocus: ["Criterios relevantes", "Claridad visual"], recommendedElements: ["Tabla rows/columns", "Highlight tu columna"], accessibilityNotes: ["Table semántica"], seoGuidelines: ["Schema comparison"], codeExamples: "// Comparison table" },
+  lead_form: { description: "Captura de leads", keyFocus: ["Minimizar fricción", "Value exchange"], recommendedElements: ["Campos mínimos", "Privacy checkbox"], accessibilityNotes: ["Labels asociados"], seoGuidelines: ["Schema ContactPoint"], codeExamples: "// Lead form" },
+  footer: { description: "Navegación secundaria", keyFocus: ["Navegación clara", "Links legales"], recommendedElements: ["Logo", "Links categorías", "Copyright"], accessibilityNotes: ["Nav landmark"], seoGuidelines: ["Schema Organization"], codeExamples: "// Footer" },
+  custom: { description: "Sección personalizada", keyFocus: ["Objetivo claro", "Coherencia diseño"], recommendedElements: ["Headline", "Contenido objetivo"], accessibilityNotes: ["WCAG AA mínimo"], seoGuidelines: ["Schema apropiado"], codeExamples: "// Custom section" }
+};
 
-  return `<!-- ==================================================================== -->
-<!-- PROMPT ESTRUCTURADO DE COMPONENTE - SECCIÓN: ${section.title.toUpperCase()} -->
-<!-- PROYECTO LANDING: ${project.name.toUpperCase()} -->
-<!-- ==================================================================== -->
+function getLLMOptimizationHints(model?: string): string {
+  const modelLower = (model || "").toLowerCase();
+  if (modelLower.includes("claude")) return "- **Claude**: Estructura jerárquica clara, ejemplos concretos de código.";
+  if (modelLower.includes("gpt-4") || modelLower.includes("openai")) return "- **GPT-4**: Formato conciso, ejemplos inline para precisión.";
+  if (modelLower.includes("gemini")) return "- **Gemini**: Detalles visuales explícitos, descripciones multimodales.";
+  return "- **Default**: Markdown estructurado, ejemplos completos, especificaciones exactas.";
+}
 
-### SYSTEM DIRECTIVE FOR AI CODE GENERATOR (LLM CONTEXT):
-- **Precision Mode**: Execute pixel-perfect component architecture. Treat all explicit numbers, color hexes, keyframes, and timing parameters as strict constants.
-- **No AI Slop Constraint**: Avoid random purple-to-blue default gradients, unformatted text placeholders, or floating glassmorphism overlays unless requested. Use clean mathematical spacing and high-contrast WCAG AA styling.
-- **Framework Constraint**: Build an isolated React Functional Component using **${framework}** with Framer Motion animations (\`initial\`, \`whileInView\`, \`transition\`).
+function validateAndNormalizeData(project: Project, section: Section) {
+  const warnings: string[] = [];
+  const validProject = { ...project };
+  const validSection = { ...section };
+  
+  if (!validProject.conversionVars.tone) { validProject.conversionVars.tone = "Minimalista Clean"; warnings.push("Tono no especificado"); }
+  if (!validProject.conversionVars.framework) { validProject.conversionVars.framework = "Tailwind CSS v4 + React"; warnings.push("Framework no especificado"); }
+  if (!validSection.copyDraft.headline?.trim()) { validSection.copyDraft.headline = "[HEADLINE PENDIENTE]"; warnings.push(`Headline faltante en ${section.title}`); }
+  if (!validSection.copyDraft.ctaText?.trim()) { validSection.copyDraft.ctaText = "Comenzar Ahora"; warnings.push("CTA default usado"); }
+  if (!validProject.styleConfig.palette.primary) { validProject.styleConfig.palette.primary = "#3B82F6"; warnings.push("Color primario default"); }
+  
+  return { validProject, validSection, warnings };
+}
 
----
+export function buildSectionPrompt(project: Project, section: Section, targetLLM?: string): string {
+  const { validProject, validSection, warnings } = validateAndNormalizeData(project, section);
+  const { palette, typography, globalVibe } = validProject.styleConfig;
+  const { tone, layoutPattern, targetAudience, primaryGoal, valueProposition, socialProofDensity, framework } = validProject.conversionVars;
+  const copy = validSection.copyDraft;
+  const overrides = validSection.sectionStyleOverrides || {};
+  const sectionConfig = SECTION_CONFIGS[validSection.type as SectionType] || SECTION_CONFIGS.custom;
+  const llmHints = getLLMOptimizationHints(targetLLM);
 
-### 1. 🎯 OBJETIVO Y ROL DEL COMPONENTE DE SECCIÓN
-- **Tipo de Sección**: ${section.type.toUpperCase()}
-- **Nombre del Componente**: \`${section.title}\`
-- **Objetivo de Conversión de la Sección**: ${section.contentObjective || "Captar la atención e incitar a la conversión"}
-- **Público Objetivo**: ${targetAudience}
-- **Meta Global de Conversión**: ${primaryGoal}
-- **Propuesta de Valor de la Marca**: ${valueProposition}
+  return `<!-- PROMPT: ${validSection.title.toUpperCase()} | TIPO: ${validSection.type.toUpperCase()} -->
 
----
+### SYSTEM DIRECTIVE
+- **Precision Mode**: Números exactos, colores HEX, timing específicos como constantes estrictas
+- **No AI Slop**: Sin gradientes purple-to-blue por defecto, sin placeholders sin formato
+- **Framework**: React + Tailwind CSS v4 + Framer Motion + Lucide Icons
+${llmHints}
 
-### 2. 🎨 SISTEMA DE DISEÑO Y GUÍA DE ESTILOS (OBLIGATORIO)
-Aplica estrictamente las siguientes especificaciones visuales usando **${framework}**:
-
-- **Paleta de Colores (Códigos HEX / Clases Tailwind)**:
-  - Color Primario (Acción / Marca): \`${palette.primary}\` (Usar en botones de conversión, énfasis de texto y bordes clave)
-  - Color Secundario: \`${palette.secondary}\` (Usar en elementos de apoyo, badges y gradientes)
-  - Color de Acento / Highlight: \`${palette.accent}\` (Usar en alertas, badges de oferta y detalles de atención)
-  - Fondo de la Sección (Background): \`${palette.background}\` (${overrides.bgStyle ? `Preferencia: ${overrides.bgStyle}` : "Fondo limpio que resalte la sección"})
-  - Superficie de Tarjetas / Contenedores: \`${palette.surface}\`
-  - Color de Texto Principal: \`${palette.text}\` (Contraste mínimo WCAG AA)
-  - Color de Texto Mapeado / Secundario: \`${palette.textMuted}\`
-
-- **Tipografía (Google Fonts)**:
-  - Fuentes a importar e implementar:
-    - **Títulos (Headings H1-H3)**: \`${typography.headingFont}\` (weights: 600, 700, 800; font-bold / font-extrabold)
-    - **Cuerpo de Texto / Párrafos**: \`${typography.bodyFont}\` (weights: 400, 500; tracking-normal, leading-relaxed)
-  - Vibe Visual General: *${globalVibe || tone}*
-
-- **Espaciados y Jerarquía Visual**:
-  - Padding Vertical de Sección: \`${overrides.paddingVertical || "Standard (py-20)"}\` con \`px-4 sm:px-6 lg:px-8\` en contenedor máximo \`max-w-7xl mx-auto\`.
-  - Bordes y Esquinas: Usar \`rounded-2xl\` o \`rounded-3xl\` para tarjetas y \`rounded-xl\` o \`rounded-full\` para botones/pills.
-
----
-
-### 3. 📐 MAQUETACIÓN VISUAL Y ESTRUCTURA DE COMPONENTE
-- **Variante de Layout**: \`${overrides.layoutVariant || layoutPattern}\`
-- **Patrón de Lectura Recomendado**: ${layoutPattern}
-- **Elementos Clave OBLIGATORIOS en este Componente**:
-${section.keyElements.map((el) => `  - [ ] ${el}`).join("\n")}
-
----
-
-### 4. ✍️ COPYWRITING Y TEXTOS PERSUASIVOS EXACTOS
-Renderiza con precisión quirúrgica los siguientes textos y estructura de copia:
-
-- **Titular Principal (H1/H2)**:
-  > "${copy.headline || "Insertar titular persuasivo"}"
-- **Subtitular / Descripción**:
-  > "${copy.subheadline || "Insertar subtítulo descriptivo enfocado en beneficios"}"
-- **Texto de Botón CTA Principal**:
-  > "${copy.ctaText || "Comenzar Ahora"}"
-${copy.secondaryCtaText ? `- **Texto de Botón CTA Secundario**: "${copy.secondaryCtaText}"` : ""}
-${copy.bulletPoints && copy.bulletPoints.length > 0 ? `- **Puntos Clave / Beneficios (Bullets)**:\n${copy.bulletPoints.map((bp) => `  * ${bp}`).join("\n")}` : ""}
-${copy.extraNotes ? `- **Micro-copia / Garantía**: "${copy.extraNotes}"` : ""}
+**⚠️ RESTRICCIONES CRÍTICAS:**
+1. **SOLO esta sección**: Genera ÚNICAMENTE el componente de la sección especificada (${validSection.type.toUpperCase()})
+2. **Sin secciones adicionales**: No crear headers, footers, navbars u otras secciones no solicitadas
+3. **Sin contenido inventado**: Usa exclusivamente el copy proporcionado abajo, no agregues textos, features o claims no especificados
+4. **Un solo componente**: Output debe ser UN archivo .tsx con la sección descrita, nada más
 
 ---
 
-### 5. ⚡ INTERACTIVIDAD, ESTADOS Y MICRO-ANIMACIONES
-- **Efectos Hover en Botones**: \`transition-all duration-300 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]\`
-- **Tarjetas / Cards**: Sombras suaves (\`shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300\`)
-- **Entradas con Framer Motion**: \`initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}\`
-- **Densidad de Prueba Social**: ${socialProofDensity}
+### 1. CONTEXTO DE SECCIÓN
+- **Tipo**: ${validSection.type.toUpperCase()} - ${sectionConfig.description}
+- **Objetivo**: ${validSection.contentObjective}
+- **Público**: ${targetAudience}
+- **Meta Conversión**: ${primaryGoal}
+
+**Enfoques Clave:**
+${sectionConfig.keyFocus.map(f => `- ${f}`).join("\n")}
 
 ---
 
-### 6. 🧩 RECOMENDACIÓN DE ASSETS E ICONOS (LUCIDE-REACT)
-- Utiliza iconos limpios de la librería \`lucide-react\` (ej: \`CheckCircle2\`, \`ArrowRight\`, \`Sparkles\`, \`ShieldCheck\`, \`Star\`, \`Zap\`, \`ChevronDown\`, \`Users\`).
-- Asegura que los iconos tengan el color de acento o primario y tamaño adecuado (\`w-5 h-5\` o \`w-6 h-6\`).
+### 2. SISTEMA DE DISEÑO
+**Colores:** Primario: \`${palette.primary}\` | Secundario: \`${palette.secondary}\` | Acento: \`${palette.accent}\`
+**Fondo:** \`${palette.background}\` ${overrides.bgStyle ? `→ ${overrides.bgStyle}` : ""}
+**Tipografía:** Headings: \`${typography.headingFont}\` | Body: \`${typography.bodyFont}\`
+**Spacing:** ${overrides.paddingVertical || "py-20"} | Container: max-w-7xl mx-auto
 
 ---
 
-### 7. 🛠️ INSTRUCCIONES TÉCNICAS DE CÓDIGO
-1. Genera el código para un **único componente de React funcional en TypeScript** que represente SOLO esta sección.
-2. Utiliza **Tailwind CSS v4** con clases de utilidad directamente en los JSX elementos.
-3. No dependas de APIs externas para imágenes; usa placeholders o gradientes elegantes con SVG cuando aplique.
-4. Asegura compatibilidad mobile-first (\`sm:\`, \`md:\`, \`lg:\`).
-5. Estructura el código de forma modular, limpia y completamente terminada sin comentarios como "// todo".
+### 3. ELEMENTOS REQUERIDOS
+${(validSection.keyElements.length > 0 ? validSection.keyElements : sectionConfig.recommendedElements).map(el => `- [ ] ${el}`).join("\n")}
+
+${sectionConfig.codeExamples ? `**Ejemplo Código:**\n\`\`\`tsx\n${sectionConfig.codeExamples}\n\`\`\`` : ""}
+
+---
+
+### 4. COPYWRITING EXACTO
+**Headline:** "${copy.headline}"
+**Subheadline:** "${copy.subheadline || "..."}"
+**CTA:** "${copy.ctaText}"
+${copy.bulletPoints?.length ? "**Bullets:**\n" + copy.bulletPoints.map(bp => `- ${bp}`).join("\n") : ""}
+
+---
+
+### 5. ACCESIBILIDAD (WCAG AA)
+${sectionConfig.accessibilityNotes.map(n => `- ${n}`).join("\n")}
+- Contraste 4.5:1 mínimo | Focus visible | ARIA labels | Keyboard nav
+
+---
+
+### 6. SEO
+${sectionConfig.seoGuidelines.map(g => `- ${g}`).join("\n")}
+
+---
+
+### 7. CHECKLIST TÉCNICO
+- [ ] Componente React/TypeScript único
+- [ ] Tailwind CSS v4 clases utilitarias
+- [ ] Framer Motion animations
+- [ ] Lucide React icons
+- [ ] Mobile-first responsive
+- [ ] Semantic HTML5
+- [ ] Sin "// todo" - código completo
+
+**⛔ PROHIBIDO:**
+- Agregar navegación, headers o footers
+- Crear secciones adicionales (hero, features, pricing, etc.)
+- Inventar copy, features, testimonios o datos no proporcionados
+- Generar múltiples componentes en un solo archivo
+
+**Output:** ÚNICAMENTE el archivo \`${validSection.title.replace(/\s+/g, '')}Section.tsx\` con la sección ${validSection.type.toUpperCase()} descrita arriba. Nada más.
 `;
 }
 
-/**
- * Generates the global project prompt context establish the overall design system
- * and sections roadmap before building individual section components.
- */
 export function buildGlobalProjectPrompt(project: Project): string {
   const { palette, typography, globalVibe } = project.styleConfig;
   const { tone, targetAudience, primaryGoal, valueProposition, framework } = project.conversionVars;
 
-  return `<!-- ==================================================================== -->
-<!-- SISTEMA DE DISEÑO GLOBAL Y CONTEXTO DEL PROYECTO LANDING PAGE -->
-<!-- PROYECTO: ${project.name.toUpperCase()} -->
-<!-- ==================================================================== -->
+  return `<!-- SISTEMA DE DISEÑO GLOBAL: ${project.name.toUpperCase()} -->
 
-### SYSTEM DIRECTIVE FOR LLM / AI ENGINE:
-- Store this design tokens state and layout hierarchy in conversation memory.
-- When generating individual section components, enforce these exact Hex color codes, Google Font declarations, and brand voice guidelines.
+### CONTEXTO PROYECTO
+- **Nombre:** ${project.name}
+- **Industria:** ${project.industry || "SaaS/Tech"}
+- **Público:** ${targetAudience}
+- **UVP:** ${valueProposition}
+- **Meta:** ${primaryGoal}
+- **Framework:** ${framework}
 
----
+### DESIGN TOKENS
+**Colores:** Primary: \`${palette.primary}\` | Secondary: \`${palette.secondary}\` | Accent: \`${palette.accent}\`
+**Fonts:** Headings: \`${typography.headingFont}\` | Body: \`${typography.bodyFont}\`
+**Vibe:** ${globalVibe}
 
-### 🚀 CONTEXTO GENERAL DEL PROYECTO Y MARCA
-- **Nombre de la Landing / Producto**: ${project.name}
-- **Descripción**: ${project.description || "Landing page de alta conversión"}
-- **Industria**: ${project.industry || "SaaS / Tecnología / Digital"}
-- **Público Objetivo**: ${targetAudience}
-- **Propuesta Única de Valor (UVP)**: ${valueProposition}
-- **Objetivo Principal de Conversión**: ${primaryGoal}
-- **Tono Visual**: ${tone}
-- **Vibe de Marca**: ${globalVibe}
-- **Framework de Código**: ${framework}
+### SECCIONES (${project.sections.length})
+${project.sections.map((s, i) => `${i+1}. **${s.title}** (\`${s.type}\`)`).join("\n")}
 
----
-
-### 🎨 SISTEMA DE DISEÑO GLOBAL DE LA LANDING PAGE
-
-1. **PALETA DE COLORES OFICIAL**:
-   - Color Primario (Acción Principal): \`${palette.primary}\`
-   - Color Secundario (Soporte / Badges): \`${palette.secondary}\`
-   - Color de Acento (Destacados / Ofertas): \`${palette.accent}\`
-   - Fondo Base (Canvas): \`${palette.background}\`
-   - Superficie de Contenedores / Cards: \`${palette.surface}\`
-   - Texto Principal (Alta legibilidad): \`${palette.text}\`
-   - Texto Secundario / Desactivado: \`${palette.textMuted}\`
-
-2. **COMBINACIÓN TIPOGRÁFICA OFICIAL**:
-   - **Títulos / Encabezados (H1 - H4)**: \`${typography.headingFont}\`
-   - **Cuerpo de Texto / Párrafos**: \`${typography.bodyFont}\`
-
----
-
-### 📋 ESTRUCTURA DE SECCIONES DEL PROYECTO (${project.sections.length} SECCIONES REGISTRADAS)
-Esta landing page está estructurada modularmente en las siguientes secciones secuenciales:
-
-${project.sections.length === 0 ? "*(No se han agregado secciones aún. Agrega secciones al proyecto para listar la secuencia completa)*" : project.sections.map((sec, idx) => `${idx + 1}. **${sec.title}** (Tipo: \`${sec.type}\`) -> ${sec.description}`).join("\n")}
-
----
-
-### ⚡ REGLA FUNDAMENTAL DE GENERACIÓN
-*Nota para el Asistente de IA / Modelo de Código*:
-Esta landing page **SE DEBE GENERAR SECCIÓN POR SECCIÓN**, nunca en un solo prompt completo, para garantizar la máxima precisión técnica, detalle en copywriting y perfección en el diseño de interfaz de cada componente.
-
-Utiliza este Prompt Global para guardar el Sistema de Diseño en la memoria del modelo y luego solicita cada sección individualmente con sus prompts dedicados.
+**REGLA:** Generar SECCIÓN POR SECCIÓN, nunca todo junto.
 `;
 }
