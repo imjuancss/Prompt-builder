@@ -424,6 +424,111 @@ export default function App() {
     showToast(`Proyecto duplicado como '${dupProject.name}'.`);
   };
 
+  // Import Project from JSON
+  const handleImportProject = (importedData: any) => {
+    if (!importedData || typeof importedData !== "object") {
+      showToast("Error: El archivo JSON no tiene un formato válido.");
+      return;
+    }
+
+    const newProjId = generateId("proj");
+    const now = new Date().toISOString();
+
+    const normalizedProject: Project = {
+      id: newProjId,
+      name: importedData.name || "Proyecto Importado",
+      description: importedData.description || "",
+      industry: importedData.industry || "General Landing",
+      conversionVars: {
+        tone: importedData.conversionVars?.tone || "SaaS Tech / Moderno",
+        layoutPattern: importedData.conversionVars?.layoutPattern || "F-Pattern (Lectura Fluida)",
+        targetAudience: importedData.conversionVars?.targetAudience || "Clientes potenciales",
+        primaryGoal: importedData.conversionVars?.primaryGoal || "Generar conversiones",
+        valueProposition: importedData.conversionVars?.valueProposition || "Propuesta de valor clara",
+        socialProofDensity: importedData.conversionVars?.socialProofDensity || "Alta",
+        interactivity: importedData.conversionVars?.interactivity || "Transiciones fluidas",
+        framework: importedData.conversionVars?.framework || "Tailwind CSS v4 + React + Lucide Icons",
+        urgencyTriggers: importedData.conversionVars?.urgencyTriggers ?? true,
+        stickyCta: importedData.conversionVars?.stickyCta ?? true,
+        impeccableCraft: importedData.conversionVars?.impeccableCraft ?? true,
+        targetLLM: importedData.conversionVars?.targetLLM || "Universal",
+      },
+      styleConfig: {
+        palette: {
+          name: importedData.styleConfig?.palette?.name || "Paleta Importada",
+          primary: importedData.styleConfig?.palette?.primary || "#3B82F6",
+          secondary: importedData.styleConfig?.palette?.secondary || "#06B6D4",
+          accent: importedData.styleConfig?.palette?.accent || "#F59E0B",
+          background: importedData.styleConfig?.palette?.background || "#0F172A",
+          surface: importedData.styleConfig?.palette?.surface || "#1E293B",
+          text: importedData.styleConfig?.palette?.text || "#F8FAFC",
+          textMuted: importedData.styleConfig?.palette?.textMuted || "#94A3B8",
+        },
+        typography: {
+          name: importedData.styleConfig?.typography?.name || "Tipografía Importada",
+          headingFont: importedData.styleConfig?.typography?.headingFont || "Plus Jakarta Sans",
+          bodyFont: importedData.styleConfig?.typography?.bodyFont || "Inter",
+        },
+        globalVibe: importedData.styleConfig?.globalVibe || "Importado desde JSON",
+        componentStyles: importedData.styleConfig?.componentStyles || {
+          borderRadius: "lg",
+          elevation: "medium",
+          buttonRadius: "lg",
+          buttonPadding: "standard",
+          buttonVariant: "solid",
+        },
+      },
+      sections: [],
+      createdAt: now,
+      updatedAt: now,
+      history: [
+        {
+          id: generateId("log"),
+          timestamp: new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+          action: "Proyecto importado desde archivo JSON",
+        },
+      ],
+    };
+
+    const rawSections = Array.isArray(importedData.sections) ? importedData.sections : [];
+    const formattedSections: Section[] = rawSections.map((sec: any, idx: number) => {
+      const secObj: Section = {
+        id: generateId("sec"),
+        type: sec.type || "custom",
+        title: sec.title || `${idx + 1}. Sección`,
+        order: idx + 1,
+        description: sec.description || "",
+        contentObjective: sec.contentObjective || "",
+        keyElements: Array.isArray(sec.keyElements) ? sec.keyElements : [],
+        copyDraft: {
+          headline: sec.copyDraft?.headline || "",
+          subheadline: sec.copyDraft?.subheadline || "",
+          ctaText: sec.copyDraft?.ctaText || "Comenzar Ahora",
+          secondaryCtaText: sec.copyDraft?.secondaryCtaText || "",
+          bulletPoints: Array.isArray(sec.copyDraft?.bulletPoints) ? sec.copyDraft.bulletPoints : [],
+          extraNotes: sec.copyDraft?.extraNotes || "",
+        },
+        sectionStyleOverrides: sec.sectionStyleOverrides || {
+          bgStyle: "Solid Surface",
+          layoutVariant: "Centered Focus",
+          paddingVertical: "Standard (py-20)",
+        },
+        generatedPrompt: "",
+        updatedAt: now,
+      };
+      secObj.generatedPrompt = buildSectionPrompt(normalizedProject, secObj);
+      return secObj;
+    });
+
+    normalizedProject.sections = formattedSections;
+
+    const updatedProjects = [normalizedProject, ...projects];
+    setProjects(updatedProjects);
+    saveProject(normalizedProject);
+    setActiveProjectId(normalizedProject.id);
+    showToast(`Proyecto '${normalizedProject.name}' importado exitosamente (${formattedSections.length} secciones).`);
+  };
+
   // Delete Project
   const handleDeleteProject = (projId: string) => {
     const remaining = deleteProject(projId);
@@ -589,6 +694,7 @@ export default function App() {
             onOpenProject={(pId) => setActiveProjectId(pId)}
             onCreateProject={handleCreateProject}
             onCreateProjectFromAi={handleCreateProjectFromAi}
+            onImportProject={handleImportProject}
             onEditProject={(proj) => setEditingProject(proj)}
             onDuplicateProject={handleDuplicateProject}
             onDeleteProject={(pId) => setProjectToDeleteId(pId)}

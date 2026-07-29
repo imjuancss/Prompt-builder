@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Project, StylePreset } from "../types";
-import { Plus, FolderKanban, Sparkles, Copy, Trash2, ArrowRight, Layers, Palette, Type, Clock, Search, Cpu, Pencil, LayoutGrid, Zap, CheckCircle2, Wand2, Bot, Loader2, AlertCircle } from "lucide-react";
+import { Plus, FolderKanban, Sparkles, Copy, Trash2, ArrowRight, Layers, Palette, Type, Clock, Search, Cpu, Pencil, LayoutGrid, Zap, CheckCircle2, Wand2, Bot, Loader2, AlertCircle, Upload, Download } from "lucide-react";
 import { PRESET_PALETTES, PRESET_TYPOGRAPHY } from "../data/presets";
 import { LANDING_PAGE_TEMPLATES, LandingPageTemplate } from "../data/landingPageTemplates";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ interface DashboardProps {
   onOpenProject: (projectId: string) => void;
   onCreateProject: (projectData: { name: string; description: string; industry: string; templateId?: string; useMasterTemplate?: boolean }) => void;
   onCreateProjectFromAi?: (aiData: any) => void;
+  onImportProject?: (importedData: any) => void;
   onEditProject?: (project: Project) => void;
   onDuplicateProject: (project: Project) => void;
   onDeleteProject: (projectId: string) => void;
@@ -28,6 +29,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenProject,
   onCreateProject,
   onCreateProjectFromAi,
+  onImportProject,
   onEditProject,
   onDuplicateProject,
   onDeleteProject,
@@ -54,6 +56,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [aiPrompt, setAiPrompt] = useState("");
   const [isGeneratingAiProject, setIsGeneratingAiProject] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+
+  // File Import Ref & Handler
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (onImportProject) {
+          onImportProject(json);
+        }
+      } catch (err) {
+        alert("El archivo seleccionado no es un JSON de proyecto válido.");
+      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+    reader.readAsText(file);
+  };
 
   const handleSelectLandingTemplate = (tmpl: LandingPageTemplate) => {
     setSelectedTemplateId(tmpl.id);
@@ -173,6 +197,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 />
               </div>
             )}
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".json"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3.5 py-1.5 bg-[#222] hover:bg-[#2A2A2A] text-slate-300 hover:text-white border border-[#3A3A3A] font-medium text-xs rounded transition flex items-center gap-1.5"
+              title="Cargar un proyecto desde un archivo JSON descargado"
+            >
+              <Upload className="w-3.5 h-3.5 text-blue-400" />
+              <span>Importar JSON</span>
+            </button>
 
             <button
               onClick={() => setIsCreateModalOpen(true)}

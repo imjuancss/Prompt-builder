@@ -30,6 +30,7 @@ import {
   Pencil,
   Code,
   Zap,
+  Download,
 } from "lucide-react";
 
 /* --- VISUAL CARD CONFIGURATIONS FOR SECTION OVERRIDES --- */
@@ -374,6 +375,39 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     }
   };
 
+  // Duplicate Section
+  const handleDuplicateSection = (sec: Section) => {
+    const duplicatedSec: Section = {
+      ...JSON.parse(JSON.stringify(sec)),
+      id: "sec_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+      title: `${sec.title} (Copia)`,
+      order: project.sections.length + 1,
+      updatedAt: new Date().toISOString(),
+    };
+    duplicatedSec.generatedPrompt = buildSectionPrompt(project, duplicatedSec);
+
+    const updatedSections = [...project.sections, duplicatedSec];
+    onUpdateProject(
+      { ...project, sections: updatedSections, updatedAt: new Date().toISOString() },
+      `Sección '${sec.title}' duplicada`
+    );
+    setActiveSectionId(duplicatedSec.id);
+    onShowToast(`¡Sección '${sec.title}' duplicada!`);
+  };
+
+  // Export Single Project JSON
+  const handleExportProjectJson = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(project, null, 2));
+    const downloadAnchor = document.createElement("a");
+    const safeFileName = (project.name || "proyecto").toLowerCase().replace(/[^a-z0-9]/gi, "_");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `promptlayer_${safeFileName}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    onShowToast(`Proyecto '${project.name}' exportado como JSON.`);
+  };
+
   // Call Gemini API to Regenerate / Polish Prompt
   const handleAiRefinePrompt = async () => {
     if (!activeSection) return;
@@ -482,6 +516,15 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           {/* Quick Config Buttons */}
           <div className="flex items-center gap-2">
             <button
+              onClick={handleExportProjectJson}
+              className="px-2.5 py-1 bg-blue-950/60 hover:bg-blue-900/80 text-blue-300 text-xs font-medium rounded border border-blue-800/40 transition flex items-center gap-1.5"
+              title="Exportar configuración completa del proyecto en archivo JSON"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-400" />
+              <span>Export JSON</span>
+            </button>
+
+            <button
               onClick={onOpenGlobalPrompt}
               className="px-2.5 py-1 bg-[#2A2A2A] hover:bg-[#333] text-[#E0E0E0] text-xs font-medium rounded border border-[#3A3A3A] transition flex items-center gap-1.5"
             >
@@ -574,15 +617,29 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                       </button>
                     </div>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteSection(sec.id);
-                      }}
-                      className="p-0.5 hover:text-rose-400 transition"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDuplicateSection(sec);
+                        }}
+                        className="p-0.5 hover:text-blue-400 transition"
+                        title="Duplicar esta sección"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSection(sec.id);
+                        }}
+                        className="p-0.5 hover:text-rose-400 transition"
+                        title="Eliminar sección"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

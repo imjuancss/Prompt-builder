@@ -1,4 +1,4 @@
-import { Project, Section, SectionType } from "../types";
+import { Project, Section, SectionType, SectionStyleOverrides } from "../types";
 
 const SECTION_CONFIGS: Record<SectionType, { description: string; keyFocus: string[]; recommendedElements: string[]; accessibilityNotes: string[]; seoGuidelines: string[]; codeExamples?: string; }> = {
   hero: { description: "Sección principal de impacto inmediato", keyFocus: ["Propuesta clara en <5s", "CTA visible sin scroll"], recommendedElements: ["H1 único", "Subheadline", "CTA principal"], accessibilityNotes: ["Contraste 4.5:1", "Alt text en imágenes"], seoGuidelines: ["H1 con keyword principal"], codeExamples: "// Hero example" },
@@ -57,6 +57,29 @@ export const IMPECCABLE_CRAFT_DIRECTIVES = `
    - Transiciones fluidas de microinteracciones (\`transition-all duration-200 ease-out\`), estados hover visualmente perceptibles, y foco accesible con anillo visible (\`focus-visible:ring-2 focus-visible:ring-blue-500\`).
 `;
 
+function getTextureDescription(overrides: SectionStyleOverrides): string {
+  const textureType = overrides.bgTextureType || "none";
+  if (textureType === "grid") {
+    const sizeMap = {
+      small: "Cuadrícula Pequeña (cuadros pequeños ~12px / ~16px)",
+      medium: "Cuadrícula Mediana (cuadros medianos ~24px / ~32px)",
+      large: "Cuadrícula Grande (cuadros grandes ~40px / ~48px)",
+    };
+    const sizeText = sizeMap[overrides.gridSize || "medium"];
+    return `Textura de Cuadrícula / Grid Pattern Overlay (\`${sizeText}\`). Debe implementarse como una capa decorativa sutil superpuesta usando patrones CSS (\`linear-gradient\` de líneas semitransparentes) o patrón SVG (\`<pattern>\` de grid) que acompañe de forma limpia y armoniosa el fondo base sin reemplazar su color.`;
+  }
+  if (textureType === "dots") {
+    const spacingMap = {
+      dense: "Point Grid - Puntos Muy Cercanos (distancia reducida ~10px)",
+      normal: "Point Grid - Puntos Normales (distancia estándar ~20px)",
+      sparse: "Point Grid - Puntos Alejados (distancia amplia ~36px)",
+    };
+    const spacingText = spacingMap[overrides.dotsSpacing || "normal"];
+    return `Textura de Matriz de Puntos / Point Grid Overlay (\`${spacingText}\`). Debe implementarse como una trama decorativa sutil de puntos superpuestos usando patrones CSS (\`radial-gradient\` de puntos semitransparentes) o patrón SVG que acompañe con elegancia el fondo base sin opacarlo.`;
+  }
+  return "Sin textura adicional (Fondo Limpio / Plano)";
+}
+
 export function buildSectionPrompt(project: Project, section: Section, targetLLMOverride?: string): string {
   const { validProject, validSection } = validateAndNormalizeData(project, section);
   const { palette, typography, globalVibe } = validProject.styleConfig;
@@ -67,26 +90,7 @@ export function buildSectionPrompt(project: Project, section: Section, targetLLM
   const effectiveLLM = targetLLMOverride || targetLLM;
   const llmHints = getLLMOptimizationHints(effectiveLLM);
 
-  // Texture Description Helper
-  const textureType = overrides.bgTextureType || "none";
-  let textureDescription = "Sin textura adicional (Limpio)";
-  if (textureType === "grid") {
-    const sizeMap = {
-      small: "Cuadrícula Pequeña (cuadros pequeños ~16px)",
-      medium: "Cuadrícula Mediana (cuadros medianos ~32px)",
-      large: "Cuadrícula Grande (cuadros grandes ~48px)",
-    };
-    const sizeText = sizeMap[overrides.gridSize || "medium"];
-    textureDescription = `Textura de Cuadrícula / Grid Overlay (\`${sizeText}\`). Implementar como un patrón sutil decorativo CSS/SVG superpuesto armoniosamente que acompaña el fondo sin reemplazarlo.`;
-  } else if (textureType === "dots") {
-    const spacingMap = {
-      dense: "Puntos Muy Cercanos (distancia reducida ~12px)",
-      normal: "Puntos Normales (distancia estándar ~24px)",
-      sparse: "Puntos Alejados (distancia amplia ~40px)",
-    };
-    const spacingText = spacingMap[overrides.dotsSpacing || "normal"];
-    textureDescription = `Textura de Matriz de Puntos / Point Grid Overlay (\`${spacingText}\`). Implementar como una trama sutil de puntos decorativos CSS/SVG superpuestos con elegancia que acompaña el fondo base.`;
-  }
+  const textureDescription = getTextureDescription(overrides);
 
   return `<!-- PROMPT: ${validSection.title.toUpperCase()} | TIPO: ${validSection.type.toUpperCase()} -->
 
@@ -195,33 +199,74 @@ ${sectionConfig.seoGuidelines.map(g => `- ${g}`).join("\n")}
 }
 
 export function buildGlobalProjectPrompt(project: Project): string {
-  const { palette, typography, globalVibe } = project.styleConfig;
-  const { tone, targetAudience, primaryGoal, valueProposition, framework, socialProofDensity, interactivity, targetLLM } = project.conversionVars;
+  const { palette, typography, globalVibe, componentStyles } = project.styleConfig;
+  const { tone, targetAudience, primaryGoal, valueProposition, framework, socialProofDensity, interactivity, targetLLM, urgencyTriggers, stickyCta, impeccableCraft } = project.conversionVars;
+  const compStyles = componentStyles || {};
 
-  return `<!-- SISTEMA DE DISEÑO GLOBAL: ${project.name.toUpperCase()} -->
+  return `<!-- SISTEMA DE DISEÑO GLOBAL Y ARQUITECTURA COMPLETA: ${project.name.toUpperCase()} -->
 
-### CONTEXTO PROYECTO
-- **Nombre:** ${project.name}
-- **Industria:** ${project.industry || "SaaS/Tech"}
+### 1. CONTEXTO GENERAL Y REGISTRO CRO
+- **Nombre del Proyecto:** ${project.name}
+- **Industria / Categoría:** ${project.industry || "SaaS / Digital Product"}
 - **Público Objetivo:** ${targetAudience}
 - **Propuesta Única de Valor (UVP):** ${valueProposition}
-- **Meta Principal:** ${primaryGoal}
-- **Framework:** ${framework}
+- **Meta Principal de Conversión:** ${primaryGoal}
+- **Tono Visual y Arquetipo:** ${tone}
+- **Framework Técnico:** ${framework}
 - **IA Objetivo:** ${targetLLM || "Cualquier Modelo de IA (Gemini, ChatGPT, Claude)"}
-- **Tono Visual:** ${tone}
 - **Densidad de Prueba Social:** ${socialProofDensity}
 - **Nivel de Interactividad:** ${interactivity || "Animaciones fluidas con Framer Motion"}
+${urgencyTriggers ? "- **Disparadores de Urgencia:** Habilitados\n" : ""}${stickyCta ? "- **Sticky Bar / CTA Flotante:** Habilitado al hacer scroll\n" : ""}${impeccableCraft !== false ? "- **Normativa Impeccable UI Craft:** Activa (Matemática de padding, bordes anidados y WCAG AA)\n" : ""}
+
+---
 
 ${IMPECCABLE_CRAFT_DIRECTIVES}
 
-### DESIGN TOKENS
-**Colores:** Primary: \`${palette.primary}\` | Secondary: \`${palette.secondary}\` | Accent: \`${palette.accent}\` | Bg: \`${palette.background}\` | Surface: \`${palette.surface}\` | Text: \`${palette.text}\`
-**Fonts:** Headings: \`${typography.headingFont}\` | Body: \`${typography.bodyFont}\`
-**Vibe:** ${globalVibe}
+---
 
-### SECCIONES CONFIGURADAS (${project.sections.length})
-${project.sections.map((s, i) => `${i+1}. **${s.title}** (\`${s.type}\`): ${s.contentObjective || s.description}`).join("\n")}
+### 2. DESIGN TOKENS Y ESTILOS VISUALES GLOBALES
+**Paleta de Colores Exacta (HEX):**
+- Primario: \`${palette.primary}\`
+- Secundario: \`${palette.secondary}\`
+- Acento: \`${palette.accent}\`
+- Fondo Base: \`${palette.background}\`
+- Superficie / Card: \`${palette.surface}\`
+- Texto Principal: \`${palette.text}\`
+- Texto Secundario: \`${palette.textMuted}\`
 
-**REGLA:** Generar SECCIÓN POR SECCIÓN, nunca todo junto en un solo archivo.
+**Combinación Tipográfica:**
+- Títulos: \`${typography.headingFont}\` | Cuerpo: \`${typography.bodyFont}\`
+
+**Estilos Globales de Componentes y Botones:**
+- Redondeado General de Tarjetas: \`${compStyles.borderRadius || "lg"}\`
+- Elevación y Sombras: \`${compStyles.elevation || "medium"}\`
+- Redondeado de Botones: \`${compStyles.buttonRadius || "lg"}\`
+- Padding Interno de Botones: \`${compStyles.buttonPadding || "standard"}\`
+- Tratamiento Visual de Botón: \`${compStyles.buttonVariant || "solid"}\`
+- Coherencia Física de Botón Secundario: Comparte exactamente el mismo redondeado, padding y estructura física que el primario.
+- Vibe / Atmósfera Global: ${globalVibe}
+
+---
+
+### 3. MAPA DETALLADO DE SECCIONES CONFIGURADAS (${project.sections.length})
+${project.sections.map((sec, i) => {
+  const overrides = sec.sectionStyleOverrides || {};
+  const textureInfo = getTextureDescription(overrides);
+  const copy = sec.copyDraft || { headline: "", ctaText: "", secondaryCtaText: "", bulletPoints: [] };
+  return `#### Sección ${i + 1}: ${sec.title.toUpperCase()} (Tipo: \`${sec.type}\`)
+- **Objetivo de Contenido:** ${sec.contentObjective || sec.description}
+- **Estilo de Fondo de Sección:** \`${overrides.bgStyle || "Solid Surface"}\`
+- **Textura Decorativa (Overlay):** ${textureInfo}
+- **Variante de Layout:** \`${overrides.layoutVariant || "Centered Focus"}\`
+- **Espaciado Vertical:** \`${overrides.paddingVertical || "Standard (py-20)"}\`
+- **Estilo de Animación:** \`${overrides.animationStyle || "Framer Motion Fluid"}\`
+${overrides.libraryEnhancements && overrides.libraryEnhancements.length > 0 ? `- **Librerías / Componentes:** ${overrides.libraryEnhancements.join(", ")}\n` : ""}- **Headline:** "${copy.headline || "[Pendiente]"}"
+- **CTA Principal:** "${copy.ctaText || "Comenzar"}"${copy.secondaryCtaText ? ` | CTA Secundario: "${copy.secondaryCtaText}"` : ""}
+${copy.bulletPoints && copy.bulletPoints.length > 0 ? `- **Puntos Clave:** ${copy.bulletPoints.join(" • ")}\n` : ""}
+`;
+}).join("\n")}
+
+**INSTRUCCIÓN FINAL DE DESARROLLO:**
+Desarrolla cada sección respetando rigurosamente la paleta de colores, las texturas de fondo decorativas seleccionadas (Cuadrícula o Point Grid superpuestas) y las especificaciones físicas de botones y componentes.
 `;
 }

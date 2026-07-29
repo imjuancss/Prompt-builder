@@ -43,12 +43,22 @@ app.post("/api/gemini/generate-section-prompt", async (req, res) => {
 
     const ai = getGeminiClient();
 
+    const textureType = sectionData.sectionStyleOverrides?.bgTextureType || "none";
+    let textureDesc = "Sin textura adicional (Fondo Limpio / Plano)";
+    if (textureType === "grid") {
+      const sizeMap: Record<string, string> = { small: "Cuadrícula Pequeña (~12px / ~16px)", medium: "Cuadrícula Mediana (~24px / ~32px)", large: "Cuadrícula Grande (~40px / ~48px)" };
+      textureDesc = `Textura de Cuadrícula / Grid Pattern Overlay (${sizeMap[sectionData.sectionStyleOverrides?.gridSize || "medium"] || "Mediana"}). Debe incluirse explícitamente como una capa decorativa sutil superpuesta en CSS background (ej. linear-gradient de líneas semitransparentes) o patrón SVG que acompaña el fondo base.`;
+    } else if (textureType === "dots") {
+      const spacingMap: Record<string, string> = { dense: "Puntos Muy Cercanos (~10px)", normal: "Puntos Normales (~20px)", sparse: "Puntos Alejados (~36px)" };
+      textureDesc = `Textura de Matriz de Puntos / Point Grid Overlay (${spacingMap[sectionData.sectionStyleOverrides?.dotsSpacing || "normal"] || "Normales"}). Debe incluirse explícitamente como una trama decorativa sutil de puntos superpuestos en CSS background (ej. radial-gradient) o patrón SVG que acompaña el fondo base.`;
+    }
+
     const systemInstruction = `Eres un Ingeniero Principal de Prompts de UI/UX y Especialista en Optimización de Tasa de Conversión (CRO).
 Tu misión es generar un prompt extremadamente estructurado, preciso y técnico en español que el usuario pueda copiar y pegar en herramientas de generación de código/UI con IA (como Gemini, Claude, Cursor, v0, etc.) para crear UN COMPONENTE DE SECCIÓN DE LANDING PAGE DE ALTA CONVERSIÓN.
 
 REGLAS CRÍTICAS DE SALIDA:
 - Debe estar enfocado ÚNICAMENTE en la sección solicitada (NO generes la landing completa).
-- Debe especificar detalladamente la paleta de colores (códigos HEX o variables Tailwind), la tipografía (Google Fonts), las variables de conversión, la jerarquía visual, la copia persuasiva (headlines, subheadlines, CTAs) y los micro-detalles de UI (espaciados, bordes, estados hover, iconos de Lucide, sombras y responsiveness).
+- Debe especificar detalladamente la paleta de colores (códigos HEX o variables Tailwind), la tipografía (Google Fonts), las variables de conversión, la TEXTURA DE FONDO DECORATIVA (Grid o Point Grid si fue configurada, especificando cómo implementarla), los estilos de botón (redondeado, padding, variante) y la coherencia física entre botones primario y secundario.
 - Incluye directivas de código limpio para Tailwind CSS y React con TypeScript.`;
 
     const userPrompt = `
@@ -65,6 +75,7 @@ CONTEXTO GLOBAL DE LA LANDING:
 - Densidad de Prueba Social: ${projectContext.conversionVars?.socialProofDensity || "Alta"}
 - Paleta de Colores: Primario ${projectContext.styleConfig?.palette?.primary}, Secundario ${projectContext.styleConfig?.palette?.secondary}, Acento ${projectContext.styleConfig?.palette?.accent}, Fondo ${projectContext.styleConfig?.palette?.background}, Texto ${projectContext.styleConfig?.palette?.text}
 - Tipografías: Títulos '${projectContext.styleConfig?.typography?.headingFont}', Cuerpos '${projectContext.styleConfig?.typography?.bodyFont}'
+- Estilos de Componentes Globale: Redondeado tarjetas '${projectContext.styleConfig?.componentStyles?.borderRadius || "lg"}', Sombras '${projectContext.styleConfig?.componentStyles?.elevation || "medium"}', Redondeado botones '${projectContext.styleConfig?.componentStyles?.buttonRadius || "lg"}', Padding interno botones '${projectContext.styleConfig?.componentStyles?.buttonPadding || "standard"}', Variante de botón '${projectContext.styleConfig?.componentStyles?.buttonVariant || "solid"}'
 - Framework preferido: ${projectContext.conversionVars?.framework || "Tailwind CSS + React + Lucide Icons"}
 
 DATOS DE LA SECCIÓN ESPECÍFICA:
@@ -72,12 +83,17 @@ DATOS DE LA SECCIÓN ESPECÍFICA:
 - Título/Nombre: ${sectionData.title}
 - Objetivo de esta sección: ${sectionData.contentObjective || "Captar la atención del usuario e incitar a la acción"}
 - Elementos clave requeridos: ${JSON.stringify(sectionData.keyElements || [])}
-- Borrador de Copy/Texto: Headline "${sectionData.copyDraft?.headline || ""}", Subheadline "${sectionData.copyDraft?.subheadline || ""}", CTA "${sectionData.copyDraft?.ctaText || ""}", Puntos clave: ${JSON.stringify(sectionData.copyDraft?.bulletPoints || [])}
-- Estilo / Disposición visual: ${JSON.stringify(sectionData.sectionStyleOverrides || {})}
+- Borrador de Copy/Texto: Headline "${sectionData.copyDraft?.headline || ""}", Subheadline "${sectionData.copyDraft?.subheadline || ""}", CTA "${sectionData.copyDraft?.ctaText || ""}", CTA Secundario "${sectionData.copyDraft?.secondaryCtaText || ""}", Puntos clave: ${JSON.stringify(sectionData.copyDraft?.bulletPoints || [])}
+- Estilo de Fondo de Sección: ${sectionData.sectionStyleOverrides?.bgStyle || "Solid Surface"}
+- Textura Decorativa de Fondo (Overlay): ${textureDesc}
+- Variante de Layout: ${sectionData.sectionStyleOverrides?.layoutVariant || "Centered Focus"}
+- Espaciado Vertical: ${sectionData.sectionStyleOverrides?.paddingVertical || "Standard (py-20)"}
+- Estilo de Animación: ${sectionData.sectionStyleOverrides?.animationStyle || "Framer Motion Fluid"}
+- Librerías / Componentes Especiales: ${JSON.stringify(sectionData.sectionStyleOverrides?.libraryEnhancements || [])}
 
 Por favor, genera un prompt profesional estructurado con los siguientes bloques en Markdown claro y listo para copiar:
 1. 🎯 OBJETIVO Y CONTEXTO DEL COMPONENTE
-2. 🎨 SISTEMA DE DISEÑO Y ESTILOS (Colores HEX, Google Fonts, Clases de Tailwind)
+2. 🎨 SISTEMA DE DISEÑO Y ESTILOS (Colores HEX, Google Fonts, Textura Decorativa Overlay, Estilos de Botón y Tarjetas)
 3. 📐 ESTRUCTURA Y MAQUETACIÓN VISUAL (Layout responsive, Grid/Flexbox, Alineación)
 4. ✍️ COPYWRITING Y CONTENIDO PERSUASIVO (Texto exacto a renderizar, titulares, CTAs)
 5. ⚡ INTERACTIVIDAD, ESTADOS Y MICRO-ANIMACIONES (Hover, focus, transiciones suaves)
